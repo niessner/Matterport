@@ -5,7 +5,67 @@
 #include <iomanip>
 
 
+class KeyPoint {
+public:
+	unsigned int m_sensorIdx;
+	unsigned int m_frameIdx;
+	vec2f m_pixelPos;
+	float m_depth;
+	vec3f m_worldPos;
+};
 
+class KeyPointMatch {
+public:
+	KeyPoint m_kp0;
+	KeyPoint m_kp1;
+
+	//std::vector<KeyPoint> m_keyPoints;
+};
+
+
+class ScannedScene {
+public:
+	ScannedScene(const std::string& path, const std::string& name) {
+		load(path, name);
+	}
+	~ScannedScene() {
+		for (auto* sd : m_sds) {
+			SAFE_DELETE(sd);
+		}
+	}
+
+	void load(const std::string& path, const std::string& name) {
+		
+		m_name = name;
+
+		Directory dir(path);
+		const auto& files = dir.getFilesWithSuffix(".sens");
+		for (auto& f : files) {
+			m_sds.push_back(new SensorData);
+			SensorData* sd = m_sds.back();
+			sd->loadFromFile(path + "/" + f);
+			std::cout << *sd << std::endl;
+		}
+	}
+
+	void findKeyPoints() {
+		for (auto* sd : m_sds) {
+			for (size_t i = 0; i < sd->m_frames.size(); i++) {
+				ColorImageR8G8B8 c = sd->computeColorImage(i);
+				DepthImage16 d = sd->computeDepthImage(i);
+
+				//TODO find key points
+			}
+		}
+	}
+private:
+	std::list<SensorData*> m_sds;
+	std::string m_name;
+
+	std::vector<KeyPoint>		m_keyPoints;
+	std::vector<KeyPointMatch>	m_keyPointMatches;
+
+};
 
 int main(int argc, char* argv[])
 {
@@ -25,13 +85,7 @@ int main(int argc, char* argv[])
 			std::cout << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 
-			if (util::directoryExists(path)) {
-				Directory dir(path);
-				if (dir.getFilesWithSuffix(".sens").size() > 0) {
-					std::cout << "\t(output exists -- skipping)" << std::endl;
-					continue;
-				}
-			}
+			ScannedScene ss(path, s);
 		}
 
 	}
