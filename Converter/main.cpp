@@ -107,6 +107,14 @@ void convertToSens(const std::string& srcPath, const std::string& outFile)
 						SensorData::COMPRESSION_TYPE_COLOR::TYPE_JPEG, SensorData::COMPRESSION_TYPE_DEPTH::TYPE_ZLIB_USHORT, depthShift, "Matterport");
 				}
 
+				if (colorImage.getWidth() != width || depthImage16.getWidth() != width ||
+					colorImage.getHeight() != height || depthImage16.getHeight() != height) {
+					std::cout << "debug: " <<
+						colorImage.getWidth() << " | " << width << " | " << depthImage16.getWidth() << " | " << width <<
+						colorImage.getHeight() << " | " << height << " | " << depthImage16.getHeight() << " | " << height << std::endl;
+					throw MLIB_EXCEPTION("image dimensions don't match");
+				}
+
 				colorImage = undistort(colorImage, sd[camIdx].m_calibrationColor.m_intrinsic, k);
 				depthImage16 = DepthImage16(undistort(depthImage16, sd[camIdx].m_calibrationDepth.m_intrinsic, k));
 				sd[camIdx].addFrame(colorImage.getData(), depthImage16.getData(), pose);
@@ -132,6 +140,21 @@ int main(int argc, char* argv[])
 #endif
 	//_CrtSetBreakAlloc(7545);
 	try {
+
+		//single debug
+		if (true) {
+			const std::string s = "D7N2EKCX4Sj";
+			const std::string path = "W:/data/matterport/v1_converted/" + s;
+			std::cout << "converting: " << path << std::endl;
+			convertToSens(path + "/data/", path + "/" + s + ".sens");
+
+			std::cout << "<< press key to exit >>" << std::endl;
+			getchar();
+			exit(1);
+		}
+
+
+
 		const std::string srcFolder = "W:/data/matterport/v1";
 		const std::string dstFolder = "W:/data/matterport/v1_converted";
 
@@ -140,14 +163,26 @@ int main(int argc, char* argv[])
 		Directory srcDir(srcFolder);
 
 		for (const std::string& s : srcDir.getDirectories()) {
-			std::cout << s << std::endl;			
-			
+
+			if (s == "archive") continue;
+
+			std::cout << s << std::endl;						
 			const std::string outPath = dstFolder + "/" + s;
+
+			if (util::directoryExists(outPath)) {
+				Directory dir(outPath);
+				if (dir.getFilesWithSuffix(".sens").size() == 3) {
+					std::cout << "\t(output exists -- skipping)" << std::endl;
+					continue;
+				}
+			}
+
 			if (true) {
 				util::deleteDirectory(outPath);
 				util::makeDirectory(outPath);
 				if (true) {
 					//extract the mesh
+					std::cout << "\textracting mesh... ";
 					const std::string srcFileMesh = srcFolder + "/" + s + "/" + s + "_mesh.zip";
 					const std::string cmd = "unzip -qq " + srcFileMesh + " -d " + outPath;
 					system(cmd.c_str());
@@ -156,8 +191,10 @@ int main(int argc, char* argv[])
 					const std::string subDirSrc = outPath + "/" + dirs.front();
 					const std::string newSubDirSrc = outPath + "/mesh/";
 					util::renameFile(subDirSrc, newSubDirSrc);
+					std::cout << "done!" << std::endl;
 				}
 				if (true) {
+					std::cout << "\textracting raw data... ";
 					//extract the raw data
 					const std::string srcFileData = srcFolder + "/" + s + "/" + s + ".zip";
 					const std::string cmd = "unzip -qq " + srcFileData + " -d " + outPath;
@@ -165,10 +202,16 @@ int main(int argc, char* argv[])
 					const std::string subDirSrc = outPath + "/" + s;
 					const std::string newSubDirSrc = outPath + "/data/";
 					util::renameFile(subDirSrc, newSubDirSrc);
+					std::cout << "done!" << std::endl;
 				}
 			}
 
-			convertToSens(outPath + "/data/", outPath + "/" + s + ".sens");
+			try {
+				convertToSens(outPath + "/data/", outPath + "/" + s + ".sens");
+			}
+			catch (const std::exception& e) {
+				std::cout << "exception caught during conversion: " << e.what() << std::endl;
+			}
 		}
 
 	}
