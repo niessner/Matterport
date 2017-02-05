@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;$(IncludePath)</IncludePath>
-    <LibraryPath>../../mLibExternal/libsWindows/lib64/;$(LibraryPath)</LibraryPath>
+    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;./opencv/build/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>../../mLibExternal/libsWindows/lib64/;./opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;$(IncludePath)</IncludePath>
-    <LibraryPath>../../mLibExternal/libsWindows/lib64/;$(LibraryPath)</LibraryPath>
+    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;./opencv/build/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>../../mLibExternal/libsWindows/lib64/;./opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>zlib64.lib;FreeImage.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib64.lib;FreeImage.lib;opencv_core249.lib;opencv_highgui249.lib;opencv_features2d249.lib;opencv_nonfree249.lib;opencv_calib3d249.lib;opencv_flann249.lib;opencv_imgproc249.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -80,16 +80,24 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>zlib64.lib;FreeImage.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib64.lib;FreeImage.lib;opencv_core249.lib;opencv_highgui249.lib;opencv_features2d249.lib;opencv_nonfree249.lib;opencv_calib3d249.lib;opencv_flann249.lib;opencv_imgproc249.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\imageHelper.h" />
+    <ClInclude Include="src\keyPoint.h" />
     <ClInclude Include="src\mLibInclude.h" />
-    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="src\stdafx.h" />
+    <ClInclude Include="src\targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="src\keyPoint.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\mLibSource.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>

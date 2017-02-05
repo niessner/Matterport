@@ -4,15 +4,8 @@
 #include "stdafx.h"
 #include <iomanip>
 
-
-class KeyPoint {
-public:
-	unsigned int m_sensorIdx;
-	unsigned int m_frameIdx;
-	vec2f m_pixelPos;
-	float m_depth;
-	vec3f m_worldPos;
-};
+#include "keyPoint.h"
+#include "imageHelper.h"
 
 class KeyPointMatch {
 public:
@@ -39,7 +32,9 @@ public:
 		m_name = name;
 
 		Directory dir(path);
-		const auto& files = dir.getFilesWithSuffix(".sens");
+		auto& files = dir.getFilesWithSuffix(".sens");
+		std::sort(files.begin(), files.end());
+
 		for (auto& f : files) {
 			m_sds.push_back(new SensorData);
 			SensorData* sd = m_sds.back();
@@ -49,17 +44,38 @@ public:
 	}
 
 	void findKeyPoints() {
-		for (auto* sd : m_sds) {
-			for (size_t i = 0; i < sd->m_frames.size(); i++) {
-				ColorImageR8G8B8 c = sd->computeColorImage(i);
-				DepthImage16 d = sd->computeDepthImage(i);
+		for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
+			SensorData* sd = m_sds[sensorIdx];
+			const mat4f intrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
 
-				//TODO find key points
+			for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+				ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
+				DepthImage16 d = sd->computeDepthImage(imageIdx);
+
+				const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
+
+				const unsigned int maxNumKeyPoints = 512;
+				std::vector<vec3f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints);
+
+				for (vec3f& rawkp : rawKeyPoints) {
+					vec2ui loc = math::round(vec2f(rawkp.x, rawkp.y));
+					if (d.isValid(loc)) {
+						KeyPoint kp;
+						kp.m_depth = d(loc) / sd->m_depthShift;
+						kp.m_frameIdx = (unsigned int)imageIdx;
+						kp.m_sensorIdx = (unsigned int)sensorIdx;
+						//kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
+						kp.m_pixelPos = vec2f(loc);
+
+						vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
+						kp.m_worldPos = camToWorld * cameraPos;
+					}
+				}
 			}
 		}
 	}
 private:
-	std::list<SensorData*> m_sds;
+	std::vector<SensorData*> m_sds;
 	std::string m_name;
 
 	std::vector<KeyPoint>		m_keyPoints;
@@ -86,6 +102,8 @@ int main(int argc, char* argv[])
 			const std::string path = srcPath + "/" + s;
 
 			ScannedScene ss(path, s);
+			ss.findKeyPoints();
+			
 		}
 
 	}
