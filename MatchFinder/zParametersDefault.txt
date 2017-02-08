@@ -6,4 +6,4 @@ s_responseThresh = 0.03f;	//response thresh to keep it as a meaningful 2D keypoi
 
 s_maxNumScenes = 1;
 s_maxNumSensFiles = 1;
-s_maxNumImages = 10;
+s_maxNumImages = 50;

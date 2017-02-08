@@ -53,9 +53,9 @@ public:
 		}		
 	}
 
-	void visulizeMatches(size_t numPairs = 10) {
+	void visulizeMatches(size_t numPairs = 10, size_t minMatches = 1) {
 		MatchVisualization mv;
-		mv.visulizeMatches(m_sds, m_keyPointMatches, numPairs);
+		mv.visulizeMatches(m_sds, m_keyPointMatches, numPairs, minMatches);
 	}
 private:
 	std::vector<SensorData*> m_sds;

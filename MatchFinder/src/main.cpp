@@ -36,7 +36,9 @@ int main(int argc, char* argv[])
 			ss.matchKeyPoints();
 			//ss.saveMatches("test.txt");
 
-			ss.visulizeMatches(3);
+			const size_t numPairs = 10;
+			const size_t minMatches = 5;
+			ss.visulizeMatches(numPairs, minMatches);
 
 			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
 		}

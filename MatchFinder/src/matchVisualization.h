@@ -8,14 +8,14 @@
 
 class MatchVisualization {
 public:
-	void visulizeMatches(const std::vector<SensorData*>& sds, const std::vector<KeyPointMatch>& matches, size_t numPairs) {
+	void visulizeMatches(const std::vector<SensorData*>& sds, const std::vector<KeyPointMatch>& matches, size_t numPairs, size_t minMatches = 1) {
 		
 		size_t currMatch = 0;
 		for (size_t i = 0; i < numPairs;) {
 
 			std::vector<KeyPointMatch> curr;
 			for (;; currMatch++) {
-				if (currMatch >= matches.size()) return;	//nothing else to do here...
+				if (currMatch >= matches.size()) break;
 
 				if (curr.size() == 0)
 					curr.push_back(matches[currMatch]);
@@ -23,7 +23,7 @@ public:
 					curr.push_back(matches[currMatch]);
 				else break;
 			}
-			if (curr.size()) {
+			if (curr.size() >= minMatches) {
 				const KeyPointMatch& r = curr.front();
 				ColorImageR8G8B8 img0 = sds[r.m_kp0.m_sensorIdx]->computeColorImage(r.m_kp0.m_imageIdx);
 				ColorImageR8G8B8 img1 = sds[r.m_kp1.m_sensorIdx]->computeColorImage(r.m_kp1.m_imageIdx);
@@ -33,6 +33,8 @@ public:
 				FreeImageWrapper::saveImage(filename, m);
 				i++;
 			}
+
+			if (currMatch >= matches.size()) break;
 		}
 	}
 private:
