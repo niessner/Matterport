@@ -121,7 +121,7 @@ public:
 
 			for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 				ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
-				DepthImage16 d = sd->computeDepthImage(imageIdx);
+				DepthImage32 d = sd->computeDepthImage(imageIdx);
 
 				//float sigmaD = 2.0f;	
 				//float sigmaR = 0.1f;
@@ -136,18 +136,23 @@ public:
 				const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
 
 				const unsigned int maxNumKeyPoints = 512;
-				std::vector<vec3f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints);
+				const float minResponse = 0.03f;
+				std::vector<vec4f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints, minResponse);
 
+				MeshDataf md;
 				size_t validKeyPoints = 0;
-				for (vec3f& rawkp : rawKeyPoints) {
+				for (vec4f& rawkp : rawKeyPoints) {
+					const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
 					vec2ui loc = math::round(vec2f(rawkp.x, rawkp.y));
-					if (d.isValid(loc)) {
+					if (d.isValid(loc) && d.isValidCoordinate(loc + padding) && d.isValidCoordinate(loc - padding)) {
 						KeyPoint kp;
-						kp.m_depth = d(loc) / sd->m_depthShift;
+						kp.m_depth = d(loc);
 						kp.m_frameIdx = (unsigned int)imageIdx;
 						kp.m_sensorIdx = (unsigned int)sensorIdx;
 						//kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
 						kp.m_pixelPos = vec2f(loc);
+						kp.m_size = rawkp.z;
+						kp.m_response = rawkp.w;
 
 						vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 						kp.m_worldPos = camToWorld * cameraPos;
@@ -155,52 +160,105 @@ public:
 						validKeyPoints++;
 
 						m_keyPoints.push_back(kp);
+
+						if (imageIdx == 0) md.merge(Shapesf::sphere(0.01f, vec3f(kp.m_worldPos), 10, 10, vec4f(1.0f, 0.0f, 0.0f, 1.0f)).computeMeshData());
 					} 
 				}
+				
 				std::cout << "\tfound " << validKeyPoints << " keypoints for image " << sensorIdx << "|" << imageIdx << std::endl;
-
-				if (imageIdx == 5) break;
+				if (imageIdx == 0) MeshIOf::saveToFile("test.ply", md);
+				if (imageIdx == 50) break;
 			} 
 		}
 	}
 
 	
 	void matchKeyPoints() {
-		const float radius = 0.1f;	//10 cm
-		const unsigned int maxK = 10;
-		NearestNeighborSearchFLANNf nn(4*maxK, 1);
-		 
-		std::vector<float> points(3 * m_keyPoints.size());
-		for (size_t i = 0; i < m_keyPoints.size(); i++) {
-			points[3 * i + 0] = m_keyPoints[i].m_worldPos.x;
-			points[3 * i + 1] = m_keyPoints[i].m_worldPos.y;
-			points[3 * i + 2] = m_keyPoints[i].m_worldPos.z;
-		}
-		nn.init(points.data(), m_keyPoints.size(), 3, maxK);
+		const float radius = 0.05f;	//10 cm
+		const unsigned int maxK = 5;
 
-		size_t numMatches = 0;
-		for (size_t i = 0; i < m_keyPoints.size(); i++) {
-			const float* query = &points[3*i];
-			std::vector<unsigned int> res = nn.fixedRadius(query, maxK, radius);
-			auto resPair = nn.fixedRadiusDist(query, maxK, radius);
-			if (res.size() == 0 || res[0] != i) throw MLIB_EXCEPTION("should find itself...");
-			for (size_t j = 1; j < res.size(); j++) {
-				
-				KeyPointMatch m;
-				m.m_kp0 = m_keyPoints[i];
-				m.m_kp1 = m_keyPoints[res[j]];
+		unsigned int currKeyPoint = 0;
+		std::vector<std::vector<NearestNeighborSearchFLANNf*>> nns(m_sds.size());
+		std::vector<std::vector<unsigned int>> nn_offsets(m_sds.size());
+		for (size_t sensorIdx = 0; sensorIdx < nns.size(); sensorIdx++) {
+			nns[sensorIdx].resize(m_sds[sensorIdx]->m_frames.size(), nullptr);
+			nn_offsets[sensorIdx].resize(m_sds[sensorIdx]->m_frames.size(), 0);
+			for (size_t frameIdx = 0; frameIdx < m_sds[sensorIdx]->m_frames.size(); frameIdx++) {				
 
-				mat4f worldToCam_kp1 = m_sds[m.m_kp1.m_sensorIdx]->m_frames[m.m_kp1.m_frameIdx].getCameraToWorld().getInverse();
-				vec3f p = worldToCam_kp1 * m.m_kp0.m_worldPos;
-				p = m_sds[m.m_kp1.m_sensorIdx]->m_calibrationDepth.cameraToProj(p);
-				m.m_offset = m.m_kp1.m_pixelPos - vec2f(p.x, p.y);
-				m_keyPointMatches.push_back(m);
-				numMatches++;
+				nn_offsets[sensorIdx][frameIdx] = currKeyPoint;
+
+				std::vector<float> points;
+				for (;	currKeyPoint < (UINT)m_keyPoints.size() &&
+						m_keyPoints[currKeyPoint].m_sensorIdx == sensorIdx && 
+						m_keyPoints[currKeyPoint].m_frameIdx == frameIdx; currKeyPoint++) {
+					points.push_back(m_keyPoints[currKeyPoint].m_worldPos.x);
+					points.push_back(m_keyPoints[currKeyPoint].m_worldPos.y);
+					points.push_back(m_keyPoints[currKeyPoint].m_worldPos.z);
+				}
+
+				if (points.size())	{
+					nns[sensorIdx][frameIdx] = new NearestNeighborSearchFLANNf(4 * maxK, 1);
+					nns[sensorIdx][frameIdx]->init(points.data(), (unsigned int)points.size() / 3, 3, maxK);
+				}
 			}
-			std::cout << "numMatches: " << numMatches << std::endl;
-		} 
+		}
+
+
+		for (size_t keyPointIdx = 0; keyPointIdx < m_keyPoints.size(); keyPointIdx++) {
+			KeyPoint& kp = m_keyPoints[keyPointIdx];
+			const float* query = (const float*)&kp.m_worldPos;
+
+			const size_t sensorIdx = kp.m_sensorIdx;
+			const size_t frameIdx = kp.m_frameIdx;
+
+			for (size_t sensorIdx_dst = sensorIdx; sensorIdx_dst < nns.size(); sensorIdx_dst++) {
+
+				size_t frameIdx_dst = 0;
+				if (sensorIdx_dst == sensorIdx) frameIdx_dst = frameIdx + 1;
+
+				for (; frameIdx_dst < nns[sensorIdx].size(); frameIdx_dst++) {
+
+					auto* nn = nns[sensorIdx_dst][frameIdx_dst];
+					if (nn == nullptr) continue;
+
+					size_t numMatches = 0;
+					std::vector<unsigned int> res = nn->fixedRadius(query, maxK, radius);
+					auto resPair = nn->fixedRadiusDist(query, maxK, radius);
+					auto resDist = nn->getDistances((UINT)res.size());
+					for (size_t j = 0; j < res.size(); j++) {
+						KeyPointMatch m;
+						m.m_kp0 = m_keyPoints[keyPointIdx];
+						m.m_kp1 = m_keyPoints[res[j] + nn_offsets[sensorIdx_dst][frameIdx_dst]];
+
+						mat4f worldToCam_kp1 = m_sds[m.m_kp1.m_sensorIdx]->m_frames[m.m_kp1.m_frameIdx].getCameraToWorld().getInverse();
+						vec3f p = worldToCam_kp1 * m.m_kp0.m_worldPos;
+						p = m_sds[m.m_kp1.m_sensorIdx]->m_calibrationDepth.cameraToProj(p);
+						m.m_offset = m.m_kp1.m_pixelPos - vec2f(p.x, p.y);
+						m_keyPointMatches.push_back(m);
+						numMatches++;
+
+						std::cout << m.m_offset << std::endl;
+
+						//std::cout << "match between: " << std::endl;
+						//std::cout << m.m_kp0;
+						//std::cout << m.m_kp1;
+						std::cout << "dist " << sensorIdx << ":\t" << (m.m_kp0.m_worldPos - m.m_kp1.m_worldPos).length() << std::endl;
+
+						int a = 5;
+					} 
+				}
+			}
+		}
+
+
+		//clean up our mess...
+		for (size_t sensorIdx = 0; sensorIdx < nns.size(); sensorIdx++) {
+			for (size_t frameIdx = 0; frameIdx < nns[sensorIdx].size(); frameIdx++) {
+				SAFE_DELETE(nns[sensorIdx][frameIdx]);
+			}
+		}
 	}
-	
+
 
 private:
 	std::vector<SensorData*> m_sds;
@@ -216,7 +274,7 @@ int main(int argc, char* argv[])
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-	//_CrtSetBreakAlloc(1489);
+	//_CrtSetBreakAlloc(1042);
 	try {
 
 		const std::string srcPath = "W:/data/matterport/v1_converted";
@@ -228,7 +286,7 @@ int main(int argc, char* argv[])
 
 			std::cout << s << std::endl;
 			const std::string path = srcPath + "/" + s;
-
+			 
 			ScannedScene ss(path, s);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
