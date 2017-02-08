@@ -44,13 +44,22 @@ public:
 	//matches all previously found key points between all images and loaded sens files
 	void matchKeyPoints();
 
-	void saveMatches(const std::string& filename) {
+	void saveMatches(const std::string& filename, bool torch = true) {
 		std::ofstream outFile(filename);
+		
+		if (!torch) {	//human readable one
+			outFile << "SceneName " << m_name << " ( " << m_keyPointMatches.size() << " matches )\n";
+			outFile << "\n";
+			for (size_t i = 0; i < m_keyPointMatches.size(); i++) {
+				outFile << "matchIdx " << i << "\n";
+				outFile << m_keyPointMatches[i] << "\n";
+			}
+		}
+		else {
 
-		outFile << "SceneName " << m_name << "\n";
-		for (size_t i = 0; i < m_keyPointMatches.size(); i++) {
-			outFile << m_keyPointMatches[i] << "\n";
-		}		
+		}
+
+
 	}
 
 	void visulizeMatches(size_t numPairs = 10, size_t minMatches = 1) {

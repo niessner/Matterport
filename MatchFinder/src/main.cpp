@@ -34,7 +34,10 @@ int main(int argc, char* argv[])
 			ScannedScene ss(path, s);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
-			//ss.saveMatches("test.txt");
+
+			const std::string matchFileName = "test.txt";
+			std::cout << "writing out matches to " << matchFileName << std::endl;
+			ss.saveMatches(matchFileName);
 
 			const size_t numPairs = 10;
 			const size_t minMatches = 5;
