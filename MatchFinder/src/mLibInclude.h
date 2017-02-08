@@ -9,6 +9,5 @@
 //#include "mLibZLib.h"
 #include "mLibFreeImage.h"	//This has to come after OpenMesh otherwise there is a crash
 #include "mLibDepthCamera.h"
-#include "mLibFLANN.h"
 
 using namespace ml;

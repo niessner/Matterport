@@ -50,7 +50,7 @@ public:
 		else
 			drawLineInternal(image, e, s, color);
 	}
-
+	 
 private:
 	//! assumes end.x >= start.x
 	template<typename T>

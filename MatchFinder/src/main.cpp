@@ -15,20 +15,34 @@ int main(int argc, char* argv[])
 #endif
 	//_CrtSetBreakAlloc(1042);
 	try {
-		const std::string srcPath = "W:/data/matterport/v1_converted";
+		size_t maxNumScenes = 0;
+		size_t maxNumSensFiles = 0;
+		size_t maxNumImages = 0;
+		
+		if (true) { //debug for faster loading
+			maxNumScenes = 1;
+			maxNumSensFiles = 1;
+			maxNumImages = 10;
+		}
 
+		const std::string srcPath = "W:/data/matterport/v1_converted";
 		Directory rootDir(srcPath);
 
-		for (const std::string& s : rootDir.getDirectories()) {
+		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
+			const std::string& s = rootDir.getDirectories()[dirIdx];
 			if (s == "archive") continue;
 
-			std::cout << s << std::endl;
+			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 			 
-			ScannedScene ss(path, s);
+			ScannedScene ss(path, s, maxNumSensFiles, maxNumImages);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
-			ss.saveMatches("test.txt");
+			//ss.saveMatches("test.txt");
+
+			ss.visulizeMatches(3);
+
+			if (maxNumScenes > 0 && dirIdx + 1 >= maxNumScenes) break;
 		}
 
 	}
