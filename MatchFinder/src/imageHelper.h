@@ -18,14 +18,14 @@ public:
 		int radiusError = 1 - x;
 
 		while (x >= y) {
-			if (image.isValidCoordinate(center.x+x, center.y+y)) image(center.x+x, center.y+y) = color;
-			if (image.isValidCoordinate(center.x+y, center.y+x)) image(center.x+y, center.y+x) = color;
-			if (image.isValidCoordinate(center.x-x, center.y+y)) image(center.x-x, center.y+y) = color;
-			if (image.isValidCoordinate(center.x-y, center.y+x)) image(center.x-y, center.y+x) = color;
-			if (image.isValidCoordinate(center.x-x, center.y-y)) image(center.x-x, center.y-y) = color;
-			if (image.isValidCoordinate(center.x-y, center.y-x)) image(center.x-y, center.y-x) = color;
-			if (image.isValidCoordinate(center.x+x, center.y-y)) image(center.x+x, center.y-y) = color;
-			if (image.isValidCoordinate(center.x+y, center.y-x)) image(center.x+y, center.y-x) = color;
+			if (image.isValidCoordinate(center.x + x, center.y + y)) image(center.x + x, center.y + y) = color;
+			if (image.isValidCoordinate(center.x + y, center.y + x)) image(center.x + y, center.y + x) = color;
+			if (image.isValidCoordinate(center.x - x, center.y + y)) image(center.x - x, center.y + y) = color;
+			if (image.isValidCoordinate(center.x - y, center.y + x)) image(center.x - y, center.y + x) = color;
+			if (image.isValidCoordinate(center.x - x, center.y - y)) image(center.x - x, center.y - y) = color;
+			if (image.isValidCoordinate(center.x - y, center.y - x)) image(center.x - y, center.y - x) = color;
+			if (image.isValidCoordinate(center.x + x, center.y - y)) image(center.x + x, center.y - y) = color;
+			if (image.isValidCoordinate(center.x + y, center.y - x)) image(center.x + y, center.y - x) = color;
 			y++;
 			if (radiusError < 0) {
 				radiusError += 2 * y + 1;
@@ -38,7 +38,7 @@ public:
 	}
 	template<typename T>
 	static void drawLine(ml::BaseImage<T>& image, const ml::vec2i& start, const ml::vec2i& end, const T& color) {
-		ml::vec2i s, e; 
+		ml::vec2i s, e;
 		s.x = ml::math::clamp(start.x, 0, (int)image.getWidth() - 1);
 		s.y = ml::math::clamp(start.y, 0, (int)image.getHeight() - 1);
 		e.x = ml::math::clamp(end.x, 0, (int)image.getWidth() - 1);

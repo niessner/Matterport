@@ -28,8 +28,7 @@ int main(int argc, char* argv[])
 			ScannedScene ss(path, s);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
-			
-			break;
+			ss.saveMatches("test.txt");
 		}
 
 	}

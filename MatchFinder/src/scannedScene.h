@@ -100,7 +100,7 @@ public:
 			sd->loadFromFile(path + "/" + f);
 			std::cout << *sd << std::endl;
 
-			break;
+			//break;
 		}
 	}
 
@@ -156,8 +156,8 @@ public:
 				}
 
 				std::cout << "\tfound " << validKeyPoints << " keypoints for image " << sensorIdx << "|" << imageIdx << std::endl;
-				if (imageIdx == 0) MeshIOf::saveToFile("test.ply", md);
-				if (imageIdx == 50) break;
+				//if (imageIdx == 0) MeshIOf::saveToFile("test.ply", md);
+				//if (imageIdx == 50) break;
 			}
 		}
 	}
@@ -227,16 +227,17 @@ public:
 						m_keyPointMatches.push_back(m);
 						numMatches++;
 
-						std::cout << "orig: " << m.m_kp1.m_pixelPos << std::endl;
-						std::cout << "repr: " << vec2f(p.x, p.y) << std::endl;
-						std::cout << m.m_offset << std::endl;
+						//std::cout << "orig: " << m.m_kp1.m_pixelPos << std::endl;
+						//std::cout << "repr: " << vec2f(p.x, p.y) << std::endl;
+						//std::cout << m.m_offset << std::endl;
 
 						//std::cout << "match between: " << std::endl;
 						//std::cout << m.m_kp0;
 						//std::cout << m.m_kp1;
-						std::cout << "dist " << sensorIdx << ":\t" << (m.m_kp0.m_worldPos - m.m_kp1.m_worldPos).length() << std::endl;
-						std::cout << std::endl;
-						int a = 5;
+
+						//std::cout << "dist " << sensorIdx << ":\t" << (m.m_kp0.m_worldPos - m.m_kp1.m_worldPos).length() << std::endl;
+						//std::cout << std::endl;
+						//int a = 5;
 					}
 				}
 			}
@@ -254,7 +255,15 @@ public:
 		std::cout << "TOTAL MATCHES FOUND " << m_keyPointMatches.size() << std::endl;
 	}
 
+	void saveMatches(const std::string& filename) {
+		std::ofstream outFile(filename);
 
+		outFile << "SceneName " << m_name << "\n";
+		for (size_t i = 0; i < m_keyPointMatches.size(); i++) {
+			outFile << m_keyPointMatches[i] << "\n";
+		}
+		
+	}
 private:
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
