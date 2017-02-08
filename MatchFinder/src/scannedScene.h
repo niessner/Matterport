@@ -5,12 +5,12 @@
 
 #include "keyPoint.h"
 #include "matchVisualization.h"
-
+#include "globalAppState.h"
 
 class ScannedScene {
 public:
-	ScannedScene(const std::string& path, const std::string& name, size_t maxNumSensFiles = 0, size_t maxNumImages = 0) {
-		load(path, name, maxNumSensFiles, maxNumImages);
+	ScannedScene(const std::string& path, const std::string& name) {
+		load(path, name);
 	}
 	~ScannedScene() {
 		for (auto* sd : m_sds) {
@@ -18,10 +18,7 @@ public:
 		}
 	} 
 
-	void load(const std::string& path, const std::string& name, size_t maxNumSensFiles = 0, size_t maxNumImages = 0) {
-
-		m_maxNumSensFiles = maxNumSensFiles;
-		m_maxNumImages = maxNumImages;
+	void load(const std::string& path, const std::string& name) {
 
 		m_name = name;
 
@@ -37,7 +34,7 @@ public:
 			sd->loadFromFile(path + "/" + f);
 			std::cout << *sd << std::endl;
 
-			if (maxNumSensFiles > 0 && i + 1 >= maxNumSensFiles) break;
+			if (GAS::get().s_maxNumSensFiles > 0 && i + 1 >= GAS::get().s_maxNumSensFiles) break;
 		}
 	}
 
@@ -66,8 +63,4 @@ private:
 
 	std::vector<KeyPoint>		m_keyPoints;
 	std::vector<KeyPointMatch>	m_keyPointMatches;
-
-
-	size_t m_maxNumSensFiles;
-	size_t m_maxNumImages;
 };

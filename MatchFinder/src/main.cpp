@@ -7,6 +7,7 @@
 #include "keyPoint.h"
 #include "imageHelper.h"
 #include "scannedScene.h"
+#include "globalAppState.h"
 
 int main(int argc, char* argv[])
 {
@@ -15,18 +16,13 @@ int main(int argc, char* argv[])
 #endif
 	//_CrtSetBreakAlloc(1042);
 	try {
-		size_t maxNumScenes = 0;
-		size_t maxNumSensFiles = 0;
-		size_t maxNumImages = 0;
-		
-		if (true) { //debug for faster loading
-			maxNumScenes = 1;
-			maxNumSensFiles = 1;
-			maxNumImages = 10;
-		}
+		const std::string fileNameDescGlobalApp = "zParametersDefault.txt";
+		GAS::loadGlobalAppState(fileNameDescGlobalApp);
+		std::cout << std::endl;
 
-		const std::string srcPath = "W:/data/matterport/v1_converted";
+		const std::string srcPath = GAS::get().s_path;
 		Directory rootDir(srcPath);
+		std::cout << "found " << rootDir.getDirectories().size() << " scenes " << std::endl;
 
 		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
 			const std::string& s = rootDir.getDirectories()[dirIdx];
@@ -35,14 +31,14 @@ int main(int argc, char* argv[])
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 			 
-			ScannedScene ss(path, s, maxNumSensFiles, maxNumImages);
+			ScannedScene ss(path, s);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
 			//ss.saveMatches("test.txt");
 
 			ss.visulizeMatches(3);
 
-			if (maxNumScenes > 0 && dirIdx + 1 >= maxNumScenes) break;
+			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
 		}
 
 	}

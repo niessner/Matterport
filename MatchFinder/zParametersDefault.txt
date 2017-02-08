@@ -1,0 +1,9 @@
+
+
+s_path = "W:/data/matterport/v1_converted";
+s_matchThresh = 0.02f;		//in meters (accept matches within this threshold)
+s_responseThresh = 0.03f;	//response thresh to keep it as a meaningful 2D keypoint
+
+s_maxNumScenes = 1;
+s_maxNumSensFiles = 1;
+s_maxNumImages = 10;

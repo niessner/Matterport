@@ -11,7 +11,7 @@ public:
 	void visulizeMatches(const std::vector<SensorData*>& sds, const std::vector<KeyPointMatch>& matches, size_t numPairs) {
 		
 		size_t currMatch = 0;
-		for (size_t i = 0; i < numPairs; i++) {
+		for (size_t i = 0; i < numPairs;) {
 
 			std::vector<KeyPointMatch> curr;
 			for (;; currMatch++) {
@@ -29,7 +29,9 @@ public:
 				ColorImageR8G8B8 img1 = sds[r.m_kp1.m_sensorIdx]->computeColorImage(r.m_kp1.m_imageIdx);
 				ColorImageR8G8B8 m = match(img0, img1, curr);
 				const std::string filename = "matches_" + std::to_string(r.m_kp0.m_imageIdx) + "_" + std::to_string(r.m_kp1.m_imageIdx) + ".png";
+				std::cout << "creating debug file: " << filename << " ( " << curr.size() << " matches ) " <<  std::endl;
 				FreeImageWrapper::saveImage(filename, m);
+				i++;
 			}
 		}
 	}
@@ -50,13 +52,12 @@ private:
 			RGBColor c = RGBColor::randomColor();
 			vec2i p0 = ml::math::round(ml::vec2f(kp.m_kp0.m_pixelPos.x, kp.m_kp0.m_pixelPos.y));
 			vec2i p1 = ml::math::round(ml::vec2f(kp.m_kp1.m_pixelPos.x, kp.m_kp1.m_pixelPos.y));
+			p1.x += img0.getWidth();
+
 			ImageHelper::drawCircle(matchImage, p0, ml::math::round(kp.m_kp0.m_size), c.getVec3());
 			ImageHelper::drawCircle(matchImage, p1, ml::math::round(kp.m_kp1.m_size), c.getVec3());
 			ImageHelper::drawLine(matchImage, p0, p1, c.getVec3());
 		}
-		//std::cout << "(" << imageIndices << "): max match distance = " << maxMatchDistance << std::endl;
-		//FreeImageWrapper::saveImage(filename, matchImage);
-
 		return matchImage;
 	}
 

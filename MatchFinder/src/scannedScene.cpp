@@ -2,7 +2,7 @@
 #include "stdafx.h"
 
 #include "scannedScene.h"
-
+#include "globalAppState.h"
 
 #include "mLibFLANN.h"
 
@@ -98,7 +98,7 @@ void ScannedScene::findKeyPoints()
 			const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
 
 			const unsigned int maxNumKeyPoints = 512;
-			const float minResponse = 0.03f;
+			const float minResponse = GAS::get().s_responseThresh;
 			std::vector<vec4f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints, minResponse);
 
 			MeshDataf md;
@@ -131,14 +131,14 @@ void ScannedScene::findKeyPoints()
 			//if (imageIdx == 0) MeshIOf::saveToFile("test.ply", md);
 			//if (imageIdx == 50) break;
 
-			if (m_maxNumImages > 0 && imageIdx + 1 >= m_maxNumImages) break;
+			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
 		}
 	}
 }
 
 void ScannedScene::matchKeyPoints()
 {
-	const float radius = 0.02f;	//10 cm
+	const float radius = GAS::get().s_matchThresh;
 	const unsigned int maxK = 5;
 
 	unsigned int currKeyPoint = 0;
