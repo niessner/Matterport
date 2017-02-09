@@ -58,7 +58,17 @@ public:
 			}
 		}
 		else {
+			outFile << "SceneName " << m_name << " ( " << matches.size() << " matches )\n";
+			outFile << "\n";
 
+			const std::string sep = "\t";
+			outFile << "matchIdx" << sep << "m_sensorIdx" << sep << "m_imageIdx" << sep << "m_pixelPos" << sep << "m_depth" << sep << "m_worldPos" << sep << "m_offset" << "\n";
+			for (size_t i = 0; i < matches.size(); i++) {
+				const KeyPoint& k0 = matches[i].m_kp0;
+				const KeyPoint& k1 = matches[i].m_kp1;
+				outFile << i << sep << k0.m_sensorIdx << sep << k0.m_imageIdx << sep << k0.m_pixelPos << sep << k0.m_depth << sep << k0.m_worldPos << sep << vec2f(0.0f) << "\n";
+				outFile << i << sep << k1.m_sensorIdx << sep << k1.m_imageIdx << sep << k1.m_pixelPos << sep << k1.m_depth << sep << k1.m_worldPos << sep << matches[i].m_offset << "\n";
+			}
 		}
 
 
@@ -74,6 +84,36 @@ public:
 	}
 	const std::vector<KeyPointMatch>& getNegatives() const {
 		return m_keyPointNegatives;
+	}
+
+	void saveImages(const std::string& outPath) const {
+
+		if (!util::directoryExists(outPath)) {
+			util::makeDirectory(outPath);
+		} 
+
+		for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
+			SensorData* sd = m_sds[sensorIdx];
+
+			for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+				ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
+				//DepthImage32 d = sd->computeDepthImage(imageIdx);
+				//TODO depth imag
+				//TODO normal image
+
+				unsigned int outWidth = GAS::get().s_outWidth;
+				unsigned int outHeight = GAS::get().s_outHeight;
+				c.resize(outWidth, outHeight);
+
+
+				char s[256];
+				sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
+				const std::string outFileColor = outPath + "/" + std::string(s);
+
+				std::cout << outFileColor << std::endl;
+				FreeImageWrapper::saveImage(outFileColor, c);
+			}
+		}
 	}
 
 private:

@@ -21,7 +21,8 @@ int main(int argc, char* argv[])
 		GAS::loadGlobalAppState(fileNameDescGlobalApp);
 		std::cout << std::endl;
 		 
-		const std::string srcPath = GAS::get().s_path;
+		const std::string srcPath = GAS::get().s_srcPath;
+		const std::string outPath = GAS::get().s_outPath;
 		Directory rootDir(srcPath);
 		std::cout << "found " << rootDir.getDirectories().size() << " scenes " << std::endl;
 
@@ -32,20 +33,22 @@ int main(int argc, char* argv[])
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 			 
-			ScannedScene ss(path, s);
+			ScannedScene ss(path, s);			
+
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
 			ss.negativeKeyPoints();
 
-			const std::string matchFileName = "test.txt";
-			bool useTorchOutput = false;
-			std::cout << "writing out matches to " << matchFileName << std::endl;
-			ss.saveMatches("test_matches.txt", ss.getMatches(), useTorchOutput);
-			ss.saveMatches("test_negativ.txt", ss.getNegatives(), useTorchOutput);
+			bool useTorchOutput = true;
+			std::cout << "writing out matches to " << s << "_matches.txt | _negativ.txt" << std::endl;
+			ss.saveMatches(outPath + "/" + s + "/" + "matches.txt", ss.getMatches(), useTorchOutput);
+			ss.saveMatches(outPath + "/" + s + "/" + "negatives.txt", ss.getNegatives(), useTorchOutput);
 
 			//const size_t numPairs = 10;
 			//const size_t minMatches = 5;
 			//ss.visulizeMatches(numPairs, minMatches);
+
+			ss.saveImages(outPath + "/" + s + "/images/");
 
 			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
 		}
