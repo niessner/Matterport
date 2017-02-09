@@ -1,9 +1,21 @@
 
 
-s_path = "W:/data/matterport/v1_converted";
+s_srcPath = "W:/data/matterport/v1_converted";
+s_outPath = "T:/datasets/Matterport/Matching/";
+
 s_matchThresh = 0.02f;		//in meters (accept matches within this threshold)
 s_responseThresh = 0.03f;	//response thresh to keep it as a meaningful 2D keypoint
 
+////debug
+//s_maxNumScenes = 1;
+//s_maxNumSensFiles = 1;
+//s_maxNumImages = 50;
+
 s_maxNumScenes = 1;
-s_maxNumSensFiles = 1;
-s_maxNumImages = 50;
+s_maxNumSensFiles = 0;
+s_maxNumImages = 0;
+
+
+//output dimensions
+s_outWidth = 640;
+s_outHeight = 480;
