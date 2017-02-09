@@ -15,11 +15,12 @@ int main(int argc, char* argv[])
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 	//_CrtSetBreakAlloc(1042);
+
 	try {
 		const std::string fileNameDescGlobalApp = "zParametersDefault.txt";
 		GAS::loadGlobalAppState(fileNameDescGlobalApp);
 		std::cout << std::endl;
-
+		 
 		const std::string srcPath = GAS::get().s_path;
 		Directory rootDir(srcPath);
 		std::cout << "found " << rootDir.getDirectories().size() << " scenes " << std::endl;
@@ -34,14 +35,17 @@ int main(int argc, char* argv[])
 			ScannedScene ss(path, s);
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
+			ss.negativeKeyPoints();
 
 			const std::string matchFileName = "test.txt";
+			bool useTorchOutput = false;
 			std::cout << "writing out matches to " << matchFileName << std::endl;
-			ss.saveMatches(matchFileName);
+			ss.saveMatches("test_matches.txt", ss.getMatches(), useTorchOutput);
+			ss.saveMatches("test_negativ.txt", ss.getNegatives(), useTorchOutput);
 
-			const size_t numPairs = 10;
-			const size_t minMatches = 5;
-			ss.visulizeMatches(numPairs, minMatches);
+			//const size_t numPairs = 10;
+			//const size_t minMatches = 5;
+			//ss.visulizeMatches(numPairs, minMatches);
 
 			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
 		}

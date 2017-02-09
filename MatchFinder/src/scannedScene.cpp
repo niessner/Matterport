@@ -77,6 +77,8 @@ void bilateralFilter(BaseImage<vec3uc>& img, float sigmaD, float sigmaR) {
 
 void ScannedScene::findKeyPoints()
 {
+	m_keyPoints.clear();
+
 	for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
 		const mat4f intrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
@@ -134,6 +136,35 @@ void ScannedScene::findKeyPoints()
 			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
 		}
 	}
+}
+
+void ScannedScene::negativeKeyPoints()
+{
+	m_keyPointNegatives.clear();
+
+	for (size_t i = 0; i < m_keyPointMatches.size(); i++) {
+		KeyPointMatch noMatch;
+		noMatch.m_kp0 = m_keyPointMatches[i].m_kp0;		//first key point is the same
+
+		//search for non-matching keypoint in a different image.
+		size_t tries = 0;
+		for (;; tries++) {
+			if (tries > 1000) throw MLIB_EXCEPTION("too many tries to find a negative match...");
+
+			unsigned int idx = math::randomUniform(0u, (unsigned int)m_keyPoints.size() - 1);
+			noMatch.m_kp1 = m_keyPoints[idx];
+			float dist = (noMatch.m_kp0.m_worldPos - noMatch.m_kp1.m_worldPos).length();
+			if (noMatch.m_kp0.isSameImage(noMatch.m_kp1) || dist <= GAS::get().s_matchThresh) continue;	//invalid; either same image or within the threshold
+			else {
+				//found a good match
+				noMatch.m_offset = vec2f(0.0f);
+				m_keyPointNegatives.push_back(noMatch);
+				break;
+			}
+		}
+	}
+
+	if (m_keyPointMatches.size() != m_keyPointNegatives.size()) throw MLIB_EXCEPTION("something went wrong here... positive and negative match counts should be the same");
 }
 
 void ScannedScene::matchKeyPoints()

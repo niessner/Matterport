@@ -40,19 +40,21 @@ public:
 
 	//for a loaded scene, finds all key points in the images
 	void findKeyPoints();
+
+	void negativeKeyPoints();
 	
 	//matches all previously found key points between all images and loaded sens files
 	void matchKeyPoints();
 
-	void saveMatches(const std::string& filename, bool torch = true) {
+	void saveMatches(const std::string& filename, const std::vector<KeyPointMatch>& matches, bool torch = true) const {
 		std::ofstream outFile(filename);
 		
 		if (!torch) {	//human readable one
-			outFile << "SceneName " << m_name << " ( " << m_keyPointMatches.size() << " matches )\n";
+			outFile << "SceneName " << m_name << " ( " << matches.size() << " matches )\n";
 			outFile << "\n";
-			for (size_t i = 0; i < m_keyPointMatches.size(); i++) {
+			for (size_t i = 0; i < matches.size(); i++) {
 				outFile << "matchIdx " << i << "\n";
-				outFile << m_keyPointMatches[i] << "\n";
+				outFile << matches[i] << "\n";
 			}
 		}
 		else {
@@ -66,10 +68,20 @@ public:
 		MatchVisualization mv;
 		mv.visulizeMatches(m_sds, m_keyPointMatches, numPairs, minMatches);
 	}
+
+	const std::vector<KeyPointMatch>& getMatches() const {
+		return m_keyPointMatches;
+	}
+	const std::vector<KeyPointMatch>& getNegatives() const {
+		return m_keyPointNegatives;
+	}
+
 private:
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
 
 	std::vector<KeyPoint>		m_keyPoints;
 	std::vector<KeyPointMatch>	m_keyPointMatches;
+
+	std::vector<KeyPointMatch>	m_keyPointNegatives;
 };
