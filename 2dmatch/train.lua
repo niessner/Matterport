@@ -9,6 +9,8 @@ require 'model'
 require 'util'
 -- require 'qtwidget' -- for visualizing images
 
+local basePath = '/mnt/raid/datasets/Matterport/Matching/'
+
 opt_string = [[
     -h,--help                                       print help
     -s,--save               (default "logs")        subdirectory to save logs
@@ -20,8 +22,8 @@ opt_string = [[
     --epoch_step            (default 20)            epoch step
     -g,--gpu_index          (default 0)             GPU index (start from 0)
     --max_epoch             (default 200)           maximum number of epochs
-    --train_data            (default "data/modelnet40_60x/train_data.txt")     txt file containing train h5 filenames
-    --test_data             (default "data/modelnet40_60x/test_data.txt")      txt file containing test h5 filenames
+    --train_data            (default "scenes_train.txt")     txt file containing train
+    --test_data             (default "scenes_test.txt")      txt file containing test
 ]]
 
 opt = lapp(opt_string)
@@ -43,21 +45,21 @@ cutorch.setDevice(opt.gpu_index+1)
 math.randomseed(os.time())
 
 -- Load model and criterion
-model,criterion = getModel()
-model:zeroGradParameters()
-parameters, gradParameters = model:getParameters()
-print(model)
+--model,criterion = getModel()	--TODO once we have the resnet file
+--model:zeroGradParameters()
+--parameters, gradParameters = model:getParameters()
+--print(model)
 
 -- Construct window for visualizing training examples
 -- visWindow = qtwidget.newwindow(1792,672)
 
---[[
+
 -- load training and testing files
-train_files = getDataFiles(opt.train_data)
-test_files = getDataFiles(opt.test_data)
+train_files = getDataFiles(paths.concat(basePath,opt.train_data))
+test_files = getDataFiles(paths.concat(basePath,opt.test_data))
 print(train_files)
 print(test_files)
---]]
+
 
 -- config for SGD solver
 optimState = {
@@ -75,17 +77,30 @@ testLogger:setNames{'% mean class accuracy (train set)', '% mean class accuracy 
 -- Training routine
 --
 function train()
-    model:training()
+    --model:training()
     epoch = epoch or 1 -- if epoch not defined, assign it as 1
     print('epoch ' .. epoch)
     if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
-    -- shuffle train files
-    local train_file_indices = torch.randperm(#train_files)
+
+	--load in the train data (positive and negative matches) 
+	local poss, negs = loadMatchFiles(basePath, train_files)
+		
+	--print(poss)
+	--print(negs)
+
+    -- shuffle train data
+    local train_indices = torch.randperm(#poss)
+
+	print(train_indices:size())
 
     local tic = torch.tic()
-    for fn = 1, #train_files do
-        local currentDataMatch,currentDataAnchor,currentDataNegMatch = loadDataFile(train_files[train_file_indices[fn]])
+    for fn = 1, train_indices:size() do --loop over train data
+        
+		local imgPath = path.concat(basePath, 	--TODO continue here 
+		local currentDataAnchor,currentDataMatch,currentDataNegMatch 
+			= getTrainingExampleTriplet(train_files[train_file_indices[fn]])
+		
 
         local filesize = (#current_data)[1]
         local indices = torch.randperm(filesize):long():split(opt.batchSize)

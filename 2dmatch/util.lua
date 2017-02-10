@@ -22,6 +22,42 @@ function loadMatchFile(file)
 
 end
 
+function loadMatchFiles(basePath, files)
+	--load in the train data (positive and negative matches) 
+	local poss = {}
+	local negs = {}
+	for fn = 1, #files do
+		local sceneName = files[fn] 
+		local file_pos = paths.concat(basePath, sceneName, 'matches.txt')
+		local file_neg = paths.concat(basePath, sceneName, 'negatives.txt')
+		
+		local _pos = loadMatchFile(file_pos)
+		local _neg = loadMatchFile(file_neg)
+		assert(#_pos == #_neg)
+		for i = 1, #_pos, 2 do
+			table.insert(poss, {sceneName, _pos[i], _pos[i+1]})
+			table.insert(negs, {sceneName,_neg[i], _neg[i+1]})
+			break
+		end
+	end
+
+	return poss, negs
+end
+
+
+
+function strToVec2(str) 
+	local parts = {}
+	for p in str:gmatch('%w+') do table.insert(parts, p) end
+	assert(#parts == 2) 
+	return tonumber(parts[1]), tonumber(parts[2]);
+end
+
+function scaleKP(kp)
+	local scale = 2.0
+	return kp[1]/scale, kp[2]/scale 
+end
+
 -- Includes: matching tote image and product image, and non-matching tote image
 function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg)
 
@@ -29,17 +65,15 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg)
 	str_pos = string.format("color-%02d-%06d.jpg", kp_pos[2], kp_pos[3])
 	str_neg = string.format("color-%02d-%06d.jpg", kp_neg[2], kp_neg[3])
 
-	print(str_anc)
-
-    local matchImg = image.load(paths.concat(path,str_anc),3,'float')
     local anchorImg = image.load(paths.concat(path,str_pos),3,'float')
+    local matchImg = image.load(paths.concat(path,str_anc),3,'float')
     local nonMatchImg = image.load(paths.concat(path,str_neg),3,'float')
 
-	--TODO continue here
+
     -- Pixel locations of patch centers (x,y)
-    local matchPixelLoc = {}
-    local anchorPixelLoc = {808,897}
-    local nonMatchPixelLoc = {661,794}
+    local anchorPixelLoc = {scaleKP({strToVec2(kp_anc[4])})}
+    local matchPixelLoc = {scaleKP({strToVec2(kp_pos[4])})}
+    local nonMatchPixelLoc = {scaleKP({strToVec2(kp_neg[4])})}
 
     -- Extract 64x64 patches
     local patchSize = 64
@@ -48,13 +82,34 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg)
     local nonMatchPatch = image.crop(nonMatchImg,nonMatchPixelLoc[1]-patchSize/2,nonMatchPixelLoc[2]-patchSize/2,nonMatchPixelLoc[1]+patchSize/2,nonMatchPixelLoc[2]+patchSize/2)
 
     -- Preprocess image patches
-    matchPatch = preprocessImg(matchPatch)
     anchorPatch = preprocessImg(anchorPatch)
+    matchPatch = preprocessImg(matchPatch)
     nonMatchPatch = preprocessImg(nonMatchPatch)
 
-    return matchPatch,anchorPatch,nonMatchPatch
-	--]]
+	return anchorPatch,matchPatch,nonMatchPatch
 end
+
+
+-- read h5 filename list
+function getDataFiles(input_file)
+	assert(paths.filep(input_file))
+	local train_files = {}
+	for line in io.lines(input_file) do
+		train_files[#train_files+1] = line
+	end
+	return train_files
+end
+
+
+
+
+
+
+
+
+
+
+
 
 
 
