@@ -42,12 +42,13 @@ end
 cutorch.setDevice(opt.gpu_index+1)
 
 -- Set RNG seed
-math.randomseed(os.time())
+--math.randomseed(os.time())
+math.randomseed(0)
 
 -- Load model and criterion
---model,criterion = getModel()	--TODO once we have the resnet file
---model:zeroGradParameters()
---parameters, gradParameters = model:getParameters()
+model,criterion = getModel()
+model:zeroGradParameters()
+parameters, gradParameters = model:getParameters()
 --print(model)
 
 -- Construct window for visualizing training examples
@@ -73,18 +74,20 @@ optimState = {
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 testLogger:setNames{'% mean class accuracy (train set)', '% mean class accuracy (test set)'}
 
+local patchSize = 64
+
 ------------------------------------
 -- Training routine
 --
 function train()
-    --model:training()
+    model:training()
     epoch = epoch or 1 -- if epoch not defined, assign it as 1
     print('epoch ' .. epoch)
     if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
 
 	--load in the train data (positive and negative matches) 
-	local poss, negs = loadMatchFiles(basePath, train_files)
+	local poss, negs = loadMatchFiles(basePath, train_files, patchSize/2)
 		
 	--print(poss)
 	--print(negs)
@@ -92,46 +95,72 @@ function train()
     -- shuffle train data
     local train_indices = torch.randperm(#poss)
 
-	print(train_indices:size())
-
     local tic = torch.tic()
-    for fn = 1, train_indices:size() do --loop over train data
-        
-		local imgPath = path.concat(basePath, 	--TODO continue here 
-		local currentDataAnchor,currentDataMatch,currentDataNegMatch 
-			= getTrainingExampleTriplet(train_files[train_file_indices[fn]])
-		
+ 
+	local filesize = (#train_indices)[1]
+    local indices = torch.randperm(filesize):long():split(opt.batchSize)
+    -- remove last mini-batch so that all the batches have equal size
+    indices[#indices] = nil
 
-        local filesize = (#current_data)[1]
-        local indices = torch.randperm(filesize):long():split(opt.batchSize)
-        -- remove last mini-batch so that all the batches have equal size
-        indices[#indices] = nil 
+	--print(indices)
 
-        for t, v in ipairs(indices) do 
-            -- print progress bar :D
-            xlua.progress(t, #indices)
+	local totalloss = 0	
+	for t, v in ipairs(indices) do 
+		-- print progress bar :D
+		xlua.progress(t, #indices)
+		--print(t,v)
 
-            local inputs = { currentDataMatch:index(1,v):cuda(), currentDataAnchor:index(1,v):cuda(), currentDataNegMatch:index(1,v):cuda() }       
+		local inputs = {}	
+		for k = 1, v:size(1) do --create a mini batch
+			local sceneName = poss[v[k]][1]
+			local imgPath = paths.concat(basePath,sceneName,'images')
+			local anc,pos,neg
+				= getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
+			
+			anc = anc:reshape(1,3,224,224)
+			pos = pos:reshape(1,3,224,224)
+			neg = neg:reshape(1,3,224,224)
+			
+			if k == 1 then
+				inputs = {anc,pos,neg}
+			else
+				inputs[1] = inputs[1]:cat(anc,1)
+	            inputs[2] = inputs[2]:cat(pos,1)
+	            inputs[3] = inputs[3]:cat(neg,1)
+			end
+		end
 
-            -- a function that takes single input and return f(x) and df/dx
-            local feval = function(x)
-                if x ~= parameters then parameters:copy(x) end
-                gradParameters:zero()
-                
-	            -- Forward and backward pass
-	            local output = model:forward(inputs)
-	            local loss = criterion:forward(output)
-	            print('Training iteration '..trainIter..': '..loss)
-	            local dLoss = criterion:backward(output)
-	            model:backward(inputs,dLoss)
-	            return loss,gradParameters
-            end
-            
-            -- use SGD optimizer: parameters as input to feval will be updated
-            optim.sgd(feval, parameters, optimState)
+    	-- Convert input to GPU memory
+	    inputs[1] = inputs[1]:cuda()
+	    inputs[2] = inputs[2]:cuda()
+	    inputs[3] = inputs[3]:cuda()
+
+		-- a function that takes single input and return f(x) and df/dx
+		local feval = function(x)
+			if x ~= parameters then parameters:copy(x) end
+           	gradParameters:zero()
+			-- Forward and backward pass
+			local output = model:forward(inputs)
+	        local loss = criterion:forward(output)
+	        --print('Training iteration '..trainIter..': '..loss)
+			totalloss = totalloss + loss
+	        local dLoss = criterion:backward(output)
+	        model:backward(inputs,dLoss)
+	        return loss,gradParameters
         end
-    end
-    --TODO PRINT TRAIN LOSS/ACCURACY
+            
+        -- use SGD optimizer: parameters as input to feval will be updated
+        optim.sgd(feval, parameters, optimState)
+	end
+	totalloss = totalloss / math.floor(train_indices:size(1), opt.batchSize)
+	
+	print('loss = ' .. totalloss)
+	
+    if testLogger then
+		paths.mkdir(opt.save)
+		testLogger:add{totalloss, -1}
+        testLogger:style{'-','-'}
+	end
     epoch = epoch + 1
 end
 
@@ -140,19 +169,19 @@ end
 --
 
 function test()
-    model:evaluate()
+    --[[model:evaluate()
     for fn = 1, #test_files do
-        local currentDataMatch,currentDataAnchor,currentDataNegMatch = loadDataFile(train_files[train_file_indices[fn]])
+        local pos,anc,neg = loadDataFile(train_files[train_file_indices[fn])
 
         local filesize = (#current_data)[1]
         local indices = torch.randperm(filesize):long():split(opt.batchSize)
         for t, v in ipairs(indices) do
-            local inputs = { currentDataMatch:index(1,v):cuda(), currentDataAnchor:index(1,v):cuda(), currentDataNegMatch:index(1,v):cuda() }       
+            local inputs = { pos:index(1,v):cuda(), anc:index(1,v):cuda(), neg:index(1,v):cuda() }       
             local outputs = model:forward(inputs)
             local loss = criterion:forward(output)
         end
     end
-    --[[ --TODO PRINT TEST LOSS/ACCURACY 
+    --TODO PRINT TEST LOSS/ACCURACY 
     if testLogger then
         paths.mkdir(opt.save)
         testLogger:add{train_acc, confusion.totalValid * 100}
