@@ -7,6 +7,7 @@ require 'optim'
 -- Custom files
 require 'model'
 require 'util'
+require 'sys'
 -- require 'qtwidget' -- for visualizing images
 
 local basePath = '/mnt/raid/datasets/Matterport/Matching/'
@@ -14,14 +15,14 @@ local basePath = '/mnt/raid/datasets/Matterport/Matching/'
 opt_string = [[
     -h,--help                                       print help
     -s,--save               (default "logs")        subdirectory to save logs
-    -b,--batchSize          (default 64)            batch size
+    -b,--batchSize          (default 8)             batch size
     -r,--learningRate       (default 0.01)          learning rate
     --learningRateDecay     (default 1e-7)          learning rate decay
     --weigthDecay           (default 0.0005)        weight decay
     -m,--momentum           (default 0.9)           mementum
     --epoch_step            (default 20)            epoch step
     -g,--gpu_index          (default 0)             GPU index (start from 0)
-    --max_epoch             (default 200)           maximum number of epochs
+    --max_epoch             (default 200)	        maximum number of epochs
     --train_data            (default "scenes_train.txt")     txt file containing train
     --test_data             (default "scenes_test.txt")      txt file containing test
 ]]
@@ -44,6 +45,7 @@ cutorch.setDevice(opt.gpu_index+1)
 -- Set RNG seed
 --math.randomseed(os.time())
 math.randomseed(0)
+
 
 -- Load model and criterion
 model,criterion = getModel()
@@ -72,9 +74,10 @@ optimState = {
 
 -- config logging
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
-testLogger:setNames{'% mean class accuracy (train set)', '% mean class accuracy (test set)'}
+testLogger:setNames{'epoch', 'iteration', '% mean class accuracy (train set)', '% mean class accuracy (test set)'}
 
 local patchSize = 64
+local saveInterval = 5000
 
 ------------------------------------
 -- Training routine
@@ -88,14 +91,14 @@ function train()
 
 	--load in the train data (positive and negative matches) 
 	local poss, negs = loadMatchFiles(basePath, train_files, patchSize/2)
-		
+	
 	--print(poss)
 	--print(negs)
 
     -- shuffle train data
     local train_indices = torch.randperm(#poss)
 
-    local tic = torch.tic()
+    --local tic = torch.tic()
  
 	local filesize = (#train_indices)[1]
     local indices = torch.randperm(filesize):long():split(opt.batchSize)
@@ -103,37 +106,66 @@ function train()
     indices[#indices] = nil
 
 	--print(indices)
+	collectgarbage()
+
+
+	local inputs = {}	--pre-allocate memory
+	inputs[1] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
+	inputs[2] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
+	inputs[3] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
 
 	local totalloss = 0	
 	for t, v in ipairs(indices) do 
-		-- print progress bar :D
-		xlua.progress(t, #indices)
-		--print(t,v)
 
-		local inputs = {}	
+		-- print progress bar :D		
+		xlua.progress(t, #indices)
+		--local inputs = {}
+		cutorch.synchronize()
+
 		for k = 1, v:size(1) do --create a mini batch
 			local sceneName = poss[v[k]][1]
 			local imgPath = paths.concat(basePath,sceneName,'images')
-			local anc,pos,neg
-				= getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
 			
-			anc = anc:reshape(1,3,224,224)
-			pos = pos:reshape(1,3,224,224)
-			neg = neg:reshape(1,3,224,224)
+			local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
 			
-			if k == 1 then
-				inputs = {anc,pos,neg}
-			else
-				inputs[1] = inputs[1]:cat(anc,1)
-	            inputs[2] = inputs[2]:cat(pos,1)
-	            inputs[3] = inputs[3]:cat(neg,1)
-			end
+			--anc = torch.ones(3, 224, 224)
+			--pos = torch.ones(3, 224, 224)
+ 			--neg = torch.ones(3, 224, 224)	
+
+			--anc = anc:reshape(1,3,224,224)
+			--pos = pos:reshape(1,3,224,224)
+			--neg = neg:reshape(1,3,224,224)
+
+			--print(anc:size())
+			
+			--if k == 1 then
+			--	inputs = {anc,pos,neg}
+			--else
+			--	inputs[1] = inputs[1]:cat(anc,1)
+	        -- 	inputs[2] = inputs[2]:cat(pos,1)
+	        -- 	inputs[3] = inputs[3]:cat(neg,1)
+			--end
+			
+			inputs[1][{k,{},{},{}}]:copy(anc)
+			inputs[2][{k,{},{},{}}]:copy(pos)
+			inputs[3][{k,{},{},{}}]:copy(neg)
 		end
+		--cutorch.synchronize()
+		--print('batchBuild time:', torch.toc(t) * 1000.0 .. ' ms')
+
+		--print('stat1: ')
+		--print(cutorch.getMemoryUsage(1))
+
+		--cutorch.synchronize()	
+		--t = torch.tic()
 
     	-- Convert input to GPU memory
 	    inputs[1] = inputs[1]:cuda()
 	    inputs[2] = inputs[2]:cuda()
 	    inputs[3] = inputs[3]:cuda()
+
+		--cutorch.synchronize()
+		--print('cudacopy time:', torch.toc(t) * 1000.0 .. ' ms')
 
 		-- a function that takes single input and return f(x) and df/dx
 		local feval = function(x)
@@ -149,19 +181,35 @@ function train()
 	        return loss,gradParameters
         end
             
-        -- use SGD optimizer: parameters as input to feval will be updated
+		--cutorch.synchronize();
+		--t = torch.tic()
+
+		-- use SGD optimizer: parameters as input to feval will be updated
         optim.sgd(feval, parameters, optimState)
+    	
+		--cutorch.synchronize();
+		--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
+
+
+		--totalloss = totalloss / math.floor(train_indices:size(1), opt.batchSize)
+		totalloss = totalloss / t
+
+    	if testLogger then
+			paths.mkdir(opt.save)
+			testLogger:add{tostring(epoch), tostring(t), totalloss, -1}
+       		testLogger:style{'-','-','-','-'}
+		end
+  
+
+		if t > 0 and t % saveInterval == 0 then
+			local filename = paths.concat(opt.save, 'model_' ..tostring(t) .. '.net')
+      		print('==> saving model to '..filename)
+			--model:clearState()
+      		torch.save(filename, model)
+		end	   
 	end
-	totalloss = totalloss / math.floor(train_indices:size(1), opt.batchSize)
 	
-	print('loss = ' .. totalloss)
-	
-    if testLogger then
-		paths.mkdir(opt.save)
-		testLogger:add{totalloss, -1}
-        testLogger:style{'-','-'}
-	end
-    epoch = epoch + 1
+	epoch = epoch + 1
 end
 
 -------------------------------------
@@ -202,7 +250,7 @@ end
 --
 for i = 1,opt.max_epoch do
     train()
-    test()
+    --test()
 end
 
 --[[

@@ -5,15 +5,24 @@ function loadMatchFile(file)
 
 	local keypoints = {}
 
+	local skip = 10 
 	local i = 0
 	for line in io.lines(file) do	
-		if i > 2 then
-			local parts = {}
-			for p in line:gmatch('([^\t]+)') do table.insert(parts, p) end
-			--print(parts)
-			table.insert(keypoints, parts)
-		
+		if i >= 3 then
+			if (i-3)%skip == 0 or (i-3)%skip == 1 then 
+				local parts = {}
+				for p in line:gmatch('([^\t]+)') do table.insert(parts, p) end
+				table.insert(keypoints, parts)
+				--print(parts)
+				--io.read()
+			end
+			
 			--if i >= 10+2 then break end --todo remove this part here
+			--if i % 100000 == 0 then
+			--	print('i ' .. i)
+			--	print(gcinfo()/1024 .. ' mb')
+			--end
+			--if #keypoints >= 100000 then break end
 		end
 		i = i + 1
 	end
@@ -58,10 +67,15 @@ function loadMatchFiles(basePath, files, padding)
 			local scale = 2.0	--because our images are only half the size
 			_pos[i][4] = strToVec2(_pos[i][4]) / scale
 			_neg[i][4] = strToVec2(_neg[i][4]) / scale
+
+			assert(_pos[i][1] == _neg[i][1])	--make sure the match index is the same
 		end
+
 
 		local bounds = torch.Tensor{640, 480}
 		for i = 1, #_pos, 2 do
+			assert(_pos[i+0][1] == _pos[i+1][1])	--make sure the match index is the same
+			assert(_neg[i+0][1] == _neg[i+1][1])	--make sure the match index is the same
 			if 
 				inBounds(_pos[i+0][4], bounds, padding) and
 				inBounds(_pos[i+1][4], bounds, padding) and
@@ -79,15 +93,16 @@ end
 
 -- Includes: matching tote image and product image, and non-matching tote image
 function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
+	
+	local str_anc = string.format("color-%02d-%06d.jpg", kp_anc[2], kp_anc[3])
+	local str_pos = string.format("color-%02d-%06d.jpg", kp_pos[2], kp_pos[3])
+	local str_neg = string.format("color-%02d-%06d.jpg", kp_neg[2], kp_neg[3])
 
-	str_anc = string.format("color-%02d-%06d.jpg", kp_anc[2], kp_anc[3])
-	str_pos = string.format("color-%02d-%06d.jpg", kp_pos[2], kp_pos[3])
-	str_neg = string.format("color-%02d-%06d.jpg", kp_neg[2], kp_neg[3])
-
+	--local t =  torch.tic()
     local anchorImg = image.load(paths.concat(path,str_pos),3,'float')
     local matchImg = image.load(paths.concat(path,str_anc),3,'float')
     local nonMatchImg = image.load(paths.concat(path,str_neg),3,'float')
-
+	--print('image load time:' , torch.toc(t) * 1000.0 .. ' ms')
 
     -- Pixel locations of patch centers (x,y)
     local anchorPixelLoc = torch.floor(kp_anc[4])
