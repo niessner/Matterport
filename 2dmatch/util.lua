@@ -1,109 +1,126 @@
 -- Some useful random util functions 
 
 function loadMatchFile(file)
-	assert(paths.filep(file))
+    assert(paths.filep(file))
 
-	local keypoints = {}
+    local keypoints = {}
 
-	local skip = 10 
-	local i = 0
-	for line in io.lines(file) do	
-		if i >= 3 then
-			if (i-3)%skip == 0 or (i-3)%skip == 1 then 
-				local parts = {}
-				for p in line:gmatch('([^\t]+)') do table.insert(parts, p) end
-				table.insert(keypoints, parts)
-				--print(parts)
-				--io.read()
-			end
-			
-			--if i >= 10+2 then break end --todo remove this part here
-			--if i % 100000 == 0 then
-			--	print('i ' .. i)
-			--	print(gcinfo()/1024 .. ' mb')
-			--end
-			--if #keypoints >= 100000 then break end
-		end
-		i = i + 1
-	end
+    local skip = 10 
+    local i = 0
+    for line in io.lines(file) do    
+        if i >= 3 then
+            if (i-3)%skip == 0 or (i-3)%skip == 1 then 
+                local parts = {}
+                for p in line:gmatch('([^\t]+)') do table.insert(parts, p) end
+                table.insert(keypoints, parts)
+                --print(parts)
+                --io.read()
+            end
+            
+            --if i >= 10+2 then break end --todo remove this part here
+            --if i % 100000 == 0 then
+            --    print('i ' .. i)
+            --    print(gcinfo()/1024 .. ' mb')
+            --end
+            --if #keypoints >= 100000 then break end
+        end
+        i = i + 1
+    end
 
-	return keypoints
+    return keypoints
 
 end
 
 
 function strToVec2(str) 
-	local parts = {}
-	for p in str:gmatch('%w+') do table.insert(parts, p) end
-	assert(#parts == 2) 
-	return torch.Tensor{tonumber(parts[1]), tonumber(parts[2])};
+    local parts = {}
+    for p in str:gmatch('%w+') do table.insert(parts, p) end
+    assert(#parts == 2) 
+    return torch.Tensor{tonumber(parts[1]), tonumber(parts[2])};
 end
 
 function inBounds(p, bounds, padding)
-	for i = 1, p:size(1), 1 do
-		if p[i] < padding or p[i] + padding > bounds[i] then
-			return false
-		end
-	end
-	return true
+    for i = 1, p:size(1), 1 do
+        if p[i] < padding or p[i] + padding > bounds[i] then
+            return false
+        end
+    end
+    return true
 end
 
 
 function loadMatchFiles(basePath, files, padding)
-	--load in the train data (positive and negative matches) 
-	local poss = {}
-	local negs = {}
-	for fn = 1, #files do
-		local sceneName = files[fn] 
-		local file_pos = paths.concat(basePath, sceneName, 'matches.txt')
-		local file_neg = paths.concat(basePath, sceneName, 'negatives.txt')
-		
-		local _pos = loadMatchFile(file_pos)
-		local _neg = loadMatchFile(file_neg)
+    --load in the train data (positive and negative matches) 
+    local poss = {}
+    local negs = {}
+    for fn = 1, #files do
+        local sceneName = files[fn] 
+        local file_pos = paths.concat(basePath, sceneName, 'matches.txt')
+        local file_neg = paths.concat(basePath, sceneName, 'negatives.txt')
+        
+        local _pos = loadMatchFile(file_pos)
+        local _neg = loadMatchFile(file_neg)
 
-		assert(#_pos == #_neg)
+        assert(#_pos == #_neg)
 
-		for i = 1, #_pos do 
-			local scale = 2.0	--because our images are only half the size
-			_pos[i][4] = strToVec2(_pos[i][4]) / scale
-			_neg[i][4] = strToVec2(_neg[i][4]) / scale
+        for i = 1, #_pos do 
+            local scale = 2.0    --because our images are only half the size
+            _pos[i][4] = strToVec2(_pos[i][4]) / scale
+            _neg[i][4] = strToVec2(_neg[i][4]) / scale
 
-			assert(_pos[i][1] == _neg[i][1])	--make sure the match index is the same
-		end
+            assert(_pos[i][1] == _neg[i][1])    --make sure the match index is the same
+        end
 
 
-		local bounds = torch.Tensor{640, 480}
-		for i = 1, #_pos, 2 do
-			assert(_pos[i+0][1] == _pos[i+1][1])	--make sure the match index is the same
-			assert(_neg[i+0][1] == _neg[i+1][1])	--make sure the match index is the same
-			if 
-				inBounds(_pos[i+0][4], bounds, padding) and
-				inBounds(_pos[i+1][4], bounds, padding) and
-				inBounds(_neg[i+0][4], bounds, padding) and
-				inBounds(_neg[i+1][4], bounds, padding)
-			then
-				table.insert(poss, {sceneName, _pos[i], _pos[i+1]})
-				table.insert(negs, {sceneName,_neg[i], _neg[i+1]})
-			end
-		end
-	end
+        local bounds = torch.Tensor{640, 480}
+        for i = 1, #_pos, 2 do
+            assert(_pos[i+0][1] == _pos[i+1][1])    --make sure the match index is the same
+            assert(_neg[i+0][1] == _neg[i+1][1])    --make sure the match index is the same
+            if 
+                inBounds(_pos[i+0][4], bounds, padding) and
+                inBounds(_pos[i+1][4], bounds, padding) and
+                inBounds(_neg[i+0][4], bounds, padding) and
+                inBounds(_neg[i+1][4], bounds, padding)
+            then
+                table.insert(poss, {sceneName, _pos[i], _pos[i+1]})
+                table.insert(negs, {sceneName,_neg[i], _neg[i+1]})
+                
+                --[[
+                print(_pos[i])
+                print(_pos[i][4])
+                print(_pos[i+1])
+                print(_pos[i+1][4])
+                print(_neg[i])
+                print(_neg[i][4])
+                print(_neg[i+1])
+                print(_neg[i+1][4])
+                io.read()--]]
+            end
+        end
+    end
 
-	return poss, negs
+    return poss, negs
 end
 
 -- Includes: matching tote image and product image, and non-matching tote image
 function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
-	
-	local str_anc = string.format("color-%02d-%06d.jpg", kp_anc[2], kp_anc[3])
-	local str_pos = string.format("color-%02d-%06d.jpg", kp_pos[2], kp_pos[3])
-	local str_neg = string.format("color-%02d-%06d.jpg", kp_neg[2], kp_neg[3])
+    
+    local str_anc = string.format("color-%02d-%06d.jpg", kp_anc[2], kp_anc[3])
+    local str_pos = string.format("color-%02d-%06d.jpg", kp_pos[2], kp_pos[3])
+    local str_neg = string.format("color-%02d-%06d.jpg", kp_neg[2], kp_neg[3])
 
-	--local t =  torch.tic()
-    local anchorImg = image.load(paths.concat(path,str_pos),3,'float')
-    local matchImg = image.load(paths.concat(path,str_anc),3,'float')
+    --local t =  torch.tic()
+    local anchorImg = image.load(paths.concat(path,str_anc),3,'float')
+    local matchImg = image.load(paths.concat(path,str_pos),3,'float')
     local nonMatchImg = image.load(paths.concat(path,str_neg),3,'float')
-	--print('image load time:' , torch.toc(t) * 1000.0 .. ' ms')
+    --print('image load time:' , torch.toc(t) * 1000.0 .. ' ms')
 
+    --[[ --debugging
+    image.save('orig_anchor.jpg', anchorImg)
+    image.save('orig_match.jpg', matchImg)
+    image.save('orig_nonmatch.jpg', nonMatchImg)
+    --debugging --]]
+    
     -- Pixel locations of patch centers (x,y)
     local anchorPixelLoc = torch.floor(kp_anc[4])
     local matchPixelLoc = torch.floor(kp_pos[4])
@@ -114,23 +131,29 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     local anchorPatch = image.crop(anchorImg,anchorPixelLoc[1]-patchSize/2,anchorPixelLoc[2]-patchSize/2,anchorPixelLoc[1]+patchSize/2,anchorPixelLoc[2]+patchSize/2)
     local nonMatchPatch = image.crop(nonMatchImg,nonMatchPixelLoc[1]-patchSize/2,nonMatchPixelLoc[2]-patchSize/2,nonMatchPixelLoc[1]+patchSize/2,nonMatchPixelLoc[2]+patchSize/2)
 
+    --[[ --debugging
+    image.save('patch_anchor.jpg', anchorPatch)
+    image.save('patch_match.jpg', matchPatch)
+    image.save('patch_nonmatch.jpg', nonMatchPatch)
+    --debugging --]]
+    
     -- Preprocess image patches
     anchorPatch = preprocessImg(anchorPatch)
     matchPatch = preprocessImg(matchPatch)
     nonMatchPatch = preprocessImg(nonMatchPatch)
 
-	return anchorPatch,matchPatch,nonMatchPatch
+    return anchorPatch,matchPatch,nonMatchPatch
 end
 
 
 -- read h5 filename list
 function getDataFiles(input_file)
-	assert(paths.filep(input_file))
-	local train_files = {}
-	for line in io.lines(input_file) do
-		train_files[#train_files+1] = line
-	end
-	return train_files
+    assert(paths.filep(input_file))
+    local train_files = {}
+    for line in io.lines(input_file) do
+        train_files[#train_files+1] = line
+    end
+    return train_files
 end
 
 
