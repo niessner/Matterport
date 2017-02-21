@@ -200,7 +200,7 @@ function train()
   
 
 		if t > 0 and t % saveInterval == 0 then
-			local filename = paths.concat(opt.save, 'model_' ..tostring(t) .. '.net')
+			local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(t) .. '.net')
       		print('==> saving model to '..filename)
 			--model:clearState()
       		torch.save(filename, model)
