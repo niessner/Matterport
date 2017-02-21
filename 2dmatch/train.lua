@@ -189,12 +189,9 @@ function train()
 		--cutorch.synchronize();
 		--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
 
-
-		totalloss = totalloss / t
-
     	if testLogger then
 			paths.mkdir(opt.save)
-			testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss}
+			testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss / t}
        		testLogger:style{'-','-','-','-'}
 		end
   
