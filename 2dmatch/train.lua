@@ -74,7 +74,7 @@ optimState = {
 
 -- config logging
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
-testLogger:setNames{'epoch', 'iteration', '% mean class accuracy (train set)', '% mean class accuracy (test set)'}
+testLogger:setNames{'epoch', 'iteration', 'current train loss', 'avg train loss'}
 
 local patchSize = 64
 local saveInterval = 5000
@@ -95,12 +95,9 @@ function train()
 	--print(poss)
 	--print(negs)
 
-    -- shuffle train data
-    local train_indices = torch.randperm(#poss)
-
     --local tic = torch.tic()
  
-	local filesize = (#train_indices)[1]
+	local filesize = #poss
     local indices = torch.randperm(filesize):long():split(opt.batchSize)
     -- remove last mini-batch so that all the batches have equal size
     indices[#indices] = nil
@@ -168,6 +165,7 @@ function train()
 		--print('cudacopy time:', torch.toc(t) * 1000.0 .. ' ms')
 
 		-- a function that takes single input and return f(x) and df/dx
+		local curLoss = -1
 		local feval = function(x)
 			if x ~= parameters then parameters:copy(x) end
            	gradParameters:zero()
@@ -175,6 +173,7 @@ function train()
 			local output = model:forward(inputs)
 	        local loss = criterion:forward(output)
 	        --print('Training iteration '..trainIter..': '..loss)
+			curLoss = loss
 			totalloss = totalloss + loss
 	        local dLoss = criterion:backward(output)
 	        model:backward(inputs,dLoss)
@@ -190,19 +189,15 @@ function train()
 		--cutorch.synchronize();
 		--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
 
-
-		--totalloss = totalloss / math.floor(train_indices:size(1), opt.batchSize)
-		totalloss = totalloss / t
-
     	if testLogger then
 			paths.mkdir(opt.save)
-			testLogger:add{tostring(epoch), tostring(t), totalloss, -1}
+			testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss / t}
        		testLogger:style{'-','-','-','-'}
 		end
   
 
 		if t > 0 and t % saveInterval == 0 then
-			local filename = paths.concat(opt.save, 'model_' ..tostring(t) .. '.net')
+			local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(t) .. '.net')
       		print('==> saving model to '..filename)
 			--model:clearState()
       		torch.save(filename, model)
