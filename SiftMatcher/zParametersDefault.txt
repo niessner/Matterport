@@ -1,0 +1,6 @@
+
+
+//s_srcPath = "W:/data/matterport/v1_converted";
+s_dataPath = "//falas/Datasets/Matterport/Matching/";
+
+s_siftMatchThresh = 50.0f;
