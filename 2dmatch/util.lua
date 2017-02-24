@@ -1,11 +1,10 @@
 -- Some useful random util functions 
 
-function loadMatchFile(file)
+function loadMatchFile(file, skip)
     assert(paths.filep(file))
 
     local keypoints = {}
 
-    local skip = 10 
     local i = 0
     for line in io.lines(file) do    
         if i >= 3 then
@@ -49,7 +48,7 @@ function inBounds(p, bounds, padding)
 end
 
 
-function loadMatchFiles(basePath, files, padding)
+function loadMatchFiles(basePath, files, padding, skip)
     --load in the train data (positive and negative matches) 
     local poss = {}
     local negs = {}
@@ -57,9 +56,9 @@ function loadMatchFiles(basePath, files, padding)
         local sceneName = files[fn] 
         local file_pos = paths.concat(basePath, sceneName, 'matches.txt')
         local file_neg = paths.concat(basePath, sceneName, 'negatives.txt')
-        
-        local _pos = loadMatchFile(file_pos)
-        local _neg = loadMatchFile(file_neg)
+
+        local _pos = loadMatchFile(file_pos, skip)
+        local _neg = loadMatchFile(file_neg, skip)
 
         assert(#_pos == #_neg)
 
@@ -98,7 +97,6 @@ function loadMatchFiles(basePath, files, padding)
             end
         end
     end
-
     return poss, negs
 end
 
@@ -156,20 +154,6 @@ function getDataFiles(input_file)
     return train_files
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 -- Lookup filenames in directory (with search query string)
 function scanDir(directory,query)
     local i, t, popen = 0, {}, io.popen
@@ -186,7 +170,9 @@ end
 
 -- Pre-process images for ResNet-101 pre-trained on ImageNet (224x224 RGB mean-subtracted std-divided)
 function preprocessImg(img)
-    img = image.scale(img,224,224)
+    if img:size(1) ~= 224 then
+        img = image.scale(img,224,224)
+    end
     local mean = {0.485,0.456,0.406}
     local std = {0.229,0.224,0.225}
     for i=1,3 do
@@ -235,4 +221,26 @@ function loadDepth(filename)
     depth = depth:clamp(0.2,1.2) -- Depth range of Intel RealSense F200
     depth = depth:csub(0.440931) -- Subtract average mean depth value from training data
     return depth
+end
+
+
+
+function serialize (o)
+    if type(o) == "number" then
+        io.write(o)
+    elseif type(o) == "string" then
+        io.write(string.format("%q", o))
+    elseif type(o) == "boolean" then
+        io.write(tostring(o))
+    elseif type(o) == "table" then
+        io.write("{\n")
+        for k,v in pairs(o) do
+            io.write("  ", k, " = ")
+            serialize(v)
+            io.write(",\n")
+        end
+        io.write("}\n")
+    else
+        error("cannot serialize a " .. type(o))
+    end
 end

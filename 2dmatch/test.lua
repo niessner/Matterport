@@ -8,7 +8,6 @@ require 'util'
 -- example usage:  th test.lua --gpu_index 0 --model ~/data/matthias/Matterport/2dmatch/logs/model_20000.net --train_data none test_data scenes_test.txt
 
 local basePath = '/mnt/raid/datasets/Matterport/Matching/'
-local patchSize = 64
 
 opt_string = [[
     -h,--help                                                print help
@@ -17,6 +16,8 @@ opt_string = [[
     --test_data             (default "scenes_test.txt")      txt file containing test
     --train_data            (default "")                     txt file containing train (optional)
     --output_dir            (default "output")               output dir for match distances
+    --patchSize             (default 64)            patch size to extract (resized to 224)
+    --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
 ]]
 
 opt = lapp(opt_string)
@@ -47,6 +48,7 @@ print('mem1: ')
 print(cutorch.getMemoryUsage(1))
 
 -- Load training snapshot model
+local patchSize = opt.patchSize
 assert(paths.filep(opt.model))
 local patchEncoder
 do 
@@ -93,7 +95,7 @@ function test(data_files, outpath)
     patchEncoder:evaluate()
     
     --load in the data (positive and negative matches) 
-    local poss, negs = loadMatchFiles(basePath, data_files, patchSize/2)
+    local poss, negs = loadMatchFiles(basePath, data_files, patchSize/2, opt.matchFileSkip)
     
     local inputs = {}
     

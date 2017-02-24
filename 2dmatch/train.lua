@@ -25,6 +25,8 @@ opt_string = [[
     --max_epoch             (default 200)	        maximum number of epochs
     --train_data            (default "scenes_train.txt")     txt file containing train
     --test_data             (default "scenes_test.txt")      txt file containing test
+    --patchSize             (default 64)            patch size to extract (resized to 224)
+    --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
 ]]
 
 opt = lapp(opt_string)
@@ -75,8 +77,18 @@ optimState = {
 -- config logging
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 testLogger:setNames{'epoch', 'iteration', 'current train loss', 'avg train loss'}
+do
+    local optfile = assert(io.open(paths.concat(opt.save, 'options.txt'), 'w'))
+    local cur = io.output()
+    io.output(optfile)
+    serialize(opt)
+    serialize(train_files)
+    serialize(test_files)
+    io.output(cur)
+    optfile:close()
+end
 
-local patchSize = 64
+local patchSize = opt.patchSize
 local saveInterval = 5000
 
 ------------------------------------
@@ -88,123 +100,119 @@ function train()
     print('epoch ' .. epoch)
     if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
-
-	--load in the train data (positive and negative matches) 
-	local poss, negs = loadMatchFiles(basePath, train_files, patchSize/2)
-	
-	--print(poss)
-	--print(negs)
+    --load in the train data (positive and negative matches) 
+    local poss, negs = loadMatchFiles(basePath, train_files, patchSize/2, opt.matchFileSkip)
+    print(#poss)
+    --print(poss)
+    --print(negs)
 
     --local tic = torch.tic()
  
-	local filesize = #poss
+    local filesize = #poss
     local indices = torch.randperm(filesize):long():split(opt.batchSize)
     -- remove last mini-batch so that all the batches have equal size
     indices[#indices] = nil
+    --print(indices)
+    collectgarbage()
 
-	--print(indices)
-	collectgarbage()
+    local inputs = {}	--pre-allocate memory
+    inputs[1] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
+    inputs[2] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
+    inputs[3] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
 
+    local totalloss = 0	
+    for t, v in ipairs(indices) do 
+	-- print progress bar :D		
+	xlua.progress(t, #indices)
+	--local inputs = {}
+	cutorch.synchronize()
 
-	local inputs = {}	--pre-allocate memory
-	inputs[1] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
-	inputs[2] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
-	inputs[3] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
-
-	local totalloss = 0	
-	for t, v in ipairs(indices) do 
-
-		-- print progress bar :D		
-		xlua.progress(t, #indices)
-		--local inputs = {}
-		cutorch.synchronize()
-
-		for k = 1, v:size(1) do --create a mini batch
-			local sceneName = poss[v[k]][1]
-			local imgPath = paths.concat(basePath,sceneName,'images')
+	for k = 1, v:size(1) do --create a mini batch
+            local sceneName = poss[v[k]][1]
+	    local imgPath = paths.concat(basePath,sceneName,'images')
 			
-			local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
+	    local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
 			
-			--anc = torch.ones(3, 224, 224)
-			--pos = torch.ones(3, 224, 224)
- 			--neg = torch.ones(3, 224, 224)	
+	    --anc = torch.ones(3, 224, 224)
+	    --pos = torch.ones(3, 224, 224)
+ 	    --neg = torch.ones(3, 224, 224)	
 
-			--anc = anc:reshape(1,3,224,224)
-			--pos = pos:reshape(1,3,224,224)
-			--neg = neg:reshape(1,3,224,224)
+	    --anc = anc:reshape(1,3,224,224)
+	    --pos = pos:reshape(1,3,224,224)
+	    --neg = neg:reshape(1,3,224,224)
 
-			--print(anc:size())
+	    --print(anc:size())
 			
-			--if k == 1 then
-			--	inputs = {anc,pos,neg}
-			--else
-			--	inputs[1] = inputs[1]:cat(anc,1)
-	        -- 	inputs[2] = inputs[2]:cat(pos,1)
-	        -- 	inputs[3] = inputs[3]:cat(neg,1)
-			--end
+	    --if k == 1 then
+	    --	inputs = {anc,pos,neg}
+	    --else
+	    --	inputs[1] = inputs[1]:cat(anc,1)
+	    -- 	inputs[2] = inputs[2]:cat(pos,1)
+	    -- 	inputs[3] = inputs[3]:cat(neg,1)
+	    --end
 			
-			inputs[1][{k,{},{},{}}]:copy(anc)
-			inputs[2][{k,{},{},{}}]:copy(pos)
-			inputs[3][{k,{},{},{}}]:copy(neg)
-		end
-		--cutorch.synchronize()
-		--print('batchBuild time:', torch.toc(t) * 1000.0 .. ' ms')
+	    inputs[1][{k,{},{},{}}]:copy(anc)
+	    inputs[2][{k,{},{},{}}]:copy(pos)
+	    inputs[3][{k,{},{},{}}]:copy(neg)
+	end
+	--cutorch.synchronize()
+	--print('batchBuild time:', torch.toc(t) * 1000.0 .. ' ms')
 
-		--print('stat1: ')
-		--print(cutorch.getMemoryUsage(1))
+	--print('stat1: ')
+	--print(cutorch.getMemoryUsage(1))
 
-		--cutorch.synchronize()	
-		--t = torch.tic()
+	--cutorch.synchronize()	
+	--t = torch.tic()
 
     	-- Convert input to GPU memory
-	    inputs[1] = inputs[1]:cuda()
-	    inputs[2] = inputs[2]:cuda()
-	    inputs[3] = inputs[3]:cuda()
+	inputs[1] = inputs[1]:cuda()
+	inputs[2] = inputs[2]:cuda()
+	inputs[3] = inputs[3]:cuda()
 
-		--cutorch.synchronize()
-		--print('cudacopy time:', torch.toc(t) * 1000.0 .. ' ms')
+	--cutorch.synchronize()
+	--print('cudacopy time:', torch.toc(t) * 1000.0 .. ' ms')
 
-		-- a function that takes single input and return f(x) and df/dx
-		local curLoss = -1
-		local feval = function(x)
-			if x ~= parameters then parameters:copy(x) end
-           	gradParameters:zero()
-			-- Forward and backward pass
-			local output = model:forward(inputs)
-	        local loss = criterion:forward(output)
-	        --print('Training iteration '..trainIter..': '..loss)
-			curLoss = loss
-			totalloss = totalloss + loss
-	        local dLoss = criterion:backward(output)
-	        model:backward(inputs,dLoss)
-	        return loss,gradParameters
+	-- a function that takes single input and return f(x) and df/dx
+	local curLoss = -1
+	local feval = function(x)
+	    if x ~= parameters then parameters:copy(x) end
+            gradParameters:zero()
+	    -- Forward and backward pass
+	    local output = model:forward(inputs)
+	    local loss = criterion:forward(output)
+	    --print('Training iteration '..trainIter..': '..loss)
+	    curLoss = loss
+	    totalloss = totalloss + loss
+	    local dLoss = criterion:backward(output)
+	    model:backward(inputs,dLoss)
+	    return loss,gradParameters
         end
             
-		--cutorch.synchronize();
-		--t = torch.tic()
+	--cutorch.synchronize();
+	--t = torch.tic()
 
-		-- use SGD optimizer: parameters as input to feval will be updated
+	-- use SGD optimizer: parameters as input to feval will be updated
         optim.sgd(feval, parameters, optimState)
     	
-		--cutorch.synchronize();
-		--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
+	--cutorch.synchronize();
+	--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
 
     	if testLogger then
-			paths.mkdir(opt.save)
-			testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss / t}
-       		testLogger:style{'-','-','-','-'}
-		end
+            paths.mkdir(opt.save)
+	    testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss / t}
+       	    testLogger:style{'-','-','-','-'}
+	end
   
 
-		if t > 0 and t % saveInterval == 0 then
-			local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(t) .. '.net')
-      		print('==> saving model to '..filename)
-			--model:clearState()
-      		torch.save(filename, model)
-		end	   
-	end
+	if t > 0 and (t % saveInterval == 0 or t == #indices) then
+	    local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(t) .. '.net')
+      	    print('==> saving model to '..filename)
+	    --model:clearState()
+      	    torch.save(filename, model)
+	end	   
+    end
 	
-	epoch = epoch + 1
+    epoch = epoch + 1
 end
 
 -------------------------------------
