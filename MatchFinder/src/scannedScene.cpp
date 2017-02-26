@@ -101,13 +101,13 @@ void ScannedScene::findKeyPoints()
 
 			const unsigned int maxNumKeyPoints = 512;
 			const float minResponse = GAS::get().s_responseThresh;
-			std::vector<vec4f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints, minResponse);
+			std::vector<KeyPoint> rawKeyPoints = KeyPointFinder::findKeyPoints(vec2ui(sensorIdx, imageIdx), c, maxNumKeyPoints, minResponse);
 
 			MeshDataf md;
 			size_t validKeyPoints = 0;
-			for (vec4f& rawkp : rawKeyPoints) {
+			for (KeyPoint& rawkp : rawKeyPoints) {
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
-				vec2ui loc = math::round(vec2f(rawkp.x, rawkp.y));
+				vec2ui loc = math::round(rawkp.m_pixelPos);
 				if (d.isValid(loc) && d.isValidCoordinate(loc + padding) && d.isValidCoordinate(loc - padding)) {
 					KeyPoint kp;
 					kp.m_depth = d(loc);
@@ -115,8 +115,11 @@ void ScannedScene::findKeyPoints()
 					kp.m_sensorIdx = (unsigned int)sensorIdx;
 					//kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
 					kp.m_pixelPos = vec2f(loc);
-					kp.m_size = rawkp.z;
-					kp.m_response = rawkp.w;
+					kp.m_size = rawkp.m_size;
+					kp.m_angle = rawkp.m_angle;
+					kp.m_octave = rawkp.m_octave;
+					kp.m_scale = rawkp.m_scale;
+					kp.m_response = rawkp.m_response;
 
 					vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;

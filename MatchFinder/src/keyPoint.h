@@ -14,9 +14,45 @@ public:
 	vec2f m_pixelPos;
 	float m_depth;
 	vec3f m_worldPos;
-	vec3f m_worldNormal;
+	//vec3f m_worldNormal;
 	float m_size;		//from the sift keypoint extractor
+	float m_angle;		//from the sift keypoint extractor
+	int m_octave;		//from the sift keypoint extractor
+	float m_scale;		//from the sift keypoint extractor
 	float m_response;	//from the sift keypoint extractor
+
+	KeyPoint()
+	{
+		m_sensorIdx = (unsigned int)-1;
+		m_imageIdx = (unsigned int)-1;
+		m_pixelPos = vec2f(-std::numeric_limits<float>::infinity());
+		m_depth = -std::numeric_limits<float>::infinity();
+		m_worldPos = vec3f(-std::numeric_limits<float>::infinity());
+		//m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
+		m_size = -std::numeric_limits<float>::infinity();
+		m_angle = -std::numeric_limits<float>::infinity();
+		m_octave = -1;
+		m_scale = -std::numeric_limits<float>::infinity();
+		m_response = -std::numeric_limits<float>::infinity();
+	}
+
+	KeyPoint(unsigned int sensorIdx, unsigned int imageIdx, const vec2f& pixelPos,
+		float size, float angle, int octave, float scale, float response)
+		: m_sensorIdx(sensorIdx), m_imageIdx(imageIdx), m_pixelPos(pixelPos), m_size(size),
+		m_angle(angle), m_scale(scale), m_octave(octave), m_response(response)
+	{
+		m_depth = -std::numeric_limits<float>::infinity();
+		m_worldPos = vec3f(-std::numeric_limits<float>::infinity());
+		//m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
+	}
+
+	//KeyPoint(unsigned int sensorIdx, unsigned int imageIdx, const vec2f& pixelPos,
+	//	float depth, const vec3f& worldPos, const vec3f& worldNormal,
+	//	float size, float angle, int octave, float scale, float response)
+	//	: m_sensorIdx(sensorIdx), m_imageIdx(imageIdx), m_pixelPos(pixelPos),
+	//	m_depth(depth), m_worldPos(worldPos), m_worldNormal(worldNormal),
+	//	m_size(size), m_angle(angle), m_scale(scale), m_octave(octave), m_response(response)
+	//{}
 
 	bool isSameImage(const KeyPoint& other) const {
 		if (m_sensorIdx == other.m_sensorIdx &&
@@ -28,7 +64,7 @@ public:
 class KeyPointFinder {
 public:
 	//! returns the key points (x, y, size, response)
-	static std::vector<vec4f> findKeyPoints(const ColorImageR8G8B8& image, unsigned int maxNumKeyPoints, float minResponse);
+	static std::vector<KeyPoint> findKeyPoints(const vec2ui& sensImIdxs, const ColorImageR8G8B8& image, unsigned int maxNumKeyPoints, float minResponse);
 private:
 };
 

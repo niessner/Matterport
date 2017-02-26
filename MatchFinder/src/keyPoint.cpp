@@ -60,8 +60,8 @@ void toItensityImageAsMat(const ColorImageR8G8B8& image, cv::Mat& im)
 	//SAFE_DELETE_ARRAY(data);
 }
 
-std::vector<vec4f> KeyPointFinder::findKeyPoints(const ColorImageR8G8B8& image, unsigned int maxNumKeyPoints, float minResponse) {
-	std::vector<vec4f> res;
+std::vector<KeyPoint> KeyPointFinder::findKeyPoints(const vec2ui& sensImIdxs, const ColorImageR8G8B8& image, unsigned int maxNumKeyPoints, float minResponse) {
+	std::vector<KeyPoint> res;
 
 	cv::Mat im;
 	toItensityImageAsMat(image, im);
@@ -92,7 +92,12 @@ std::vector<vec4f> KeyPointFinder::findKeyPoints(const ColorImageR8G8B8& image, 
 		vec2ui loc((unsigned int)std::round(k.pt.x), (unsigned int)std::round(k.pt.y));
 		if (keyPointLocations.find(loc) == keyPointLocations.end()) {
 			keyPointLocations.insert(loc);
-			res.push_back(vec4f(k.pt.x, k.pt.y, k.size, k.response));
+			//need to unpack octave from keypoint
+			int octave = k.octave & 255;
+			int layer = (k.octave >> 8) & 255;
+			octave = octave < 128 ? octave : (-128 | octave);
+			float scale = octave >= 0 ? 1.f / (1 << octave) : (float)(1 << -octave);
+			res.push_back(KeyPoint(sensImIdxs.x, sensImIdxs.y, vec2f(k.pt.x, k.pt.y), k.size, k.angle, octave, scale, k.response)); //opencv sift octave missing the unpack
 		}
 	}
 
