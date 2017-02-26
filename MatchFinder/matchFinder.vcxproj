@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;./opencv/build/include/;$(IncludePath)</IncludePath>
-    <LibraryPath>../../mLibExternal/libsWindows/lib64/;./opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
+    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;../opencv/build/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>../../mLibExternal/libsWindows/lib64/;../opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;./opencv/build/include/;$(IncludePath)</IncludePath>
-    <LibraryPath>../../mLibExternal/libsWindows/lib64/;./opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
+    <IncludePath>./;./src/;../../mLib/include/;../../mLibExternal/include/;../opencv/build/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>../../mLibExternal/libsWindows/lib64/;../opencv/build/x64/vc12/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

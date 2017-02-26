@@ -101,22 +101,26 @@ void ScannedScene::findKeyPoints()
 
 			const unsigned int maxNumKeyPoints = 512;
 			const float minResponse = GAS::get().s_responseThresh;
-			std::vector<vec4f> rawKeyPoints = KeyPointFinder::findKeyPoints(c, maxNumKeyPoints, minResponse);
+			std::vector<KeyPoint> rawKeyPoints = KeyPointFinder::findKeyPoints(vec2ui(sensorIdx, imageIdx), c, maxNumKeyPoints, minResponse);
 
 			MeshDataf md;
 			size_t validKeyPoints = 0;
-			for (vec4f& rawkp : rawKeyPoints) {
+			for (KeyPoint& rawkp : rawKeyPoints) {
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
-				vec2ui loc = math::round(vec2f(rawkp.x, rawkp.y));
+				vec2ui loc = math::round(rawkp.m_pixelPos);
 				if (d.isValid(loc) && d.isValidCoordinate(loc + padding) && d.isValidCoordinate(loc - padding)) {
-					KeyPoint kp;
+					KeyPoint kp = rawkp;
 					kp.m_depth = d(loc);
 					kp.m_imageIdx = (unsigned int)imageIdx;
 					kp.m_sensorIdx = (unsigned int)sensorIdx;
-					//kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
+					////kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
 					kp.m_pixelPos = vec2f(loc);
-					kp.m_size = rawkp.z;
-					kp.m_response = rawkp.w;
+					//kp.m_size = rawkp.m_size;
+					//kp.m_angle = rawkp.m_angle;
+					//kp.m_octave = rawkp.m_octave;
+					//kp.m_scale = rawkp.m_scale;
+					//kp.m_response = rawkp.m_response;
+					//kp.m_opencvPackOctave = rawkp.m_opencvPackOctave;
 
 					vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
@@ -129,13 +133,14 @@ void ScannedScene::findKeyPoints()
 				}
 			}
 
-			std::cout << "\tfound " << validKeyPoints << " keypoints for image " << sensorIdx << "|" << imageIdx << std::endl;
+			std::cout << "\r" << "image: " << sensorIdx << "|" << imageIdx  << " found " << validKeyPoints << " keypoints";
 			//if (imageIdx == 0) MeshIOf::saveToFile("test.ply", md);
 			//if (imageIdx == 50) break;
 
 			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
 		}
 	}
+	std::cout << std::endl;
 }
 
 void ScannedScene::negativeKeyPoints()
@@ -152,6 +157,9 @@ void ScannedScene::negativeKeyPoints()
 			if (tries > 1000) throw MLIB_EXCEPTION("too many tries to find a negative match...");
 
 			unsigned int idx = math::randomUniform(0u, (unsigned int)m_keyPoints.size() - 1);
+			if (idx >= (unsigned int)m_keyPoints.size()) {
+				std::cout << __FUNCTION__ << " ERROR: " << idx << "\t" << m_keyPoints.size() << std::endl;
+			}
 			noMatch.m_kp1 = m_keyPoints[idx];
 			float dist = (noMatch.m_kp0.m_worldPos - noMatch.m_kp1.m_worldPos).length();
 			if (noMatch.m_kp0.isSameImage(noMatch.m_kp1) || dist <= GAS::get().s_matchThresh) continue;	//invalid; either same image or within the threshold
@@ -200,6 +208,10 @@ void ScannedScene::matchKeyPoints()
 
 
 	for (size_t keyPointIdx = 0; keyPointIdx < m_keyPoints.size(); keyPointIdx++) {
+
+		if (keyPointIdx % 100 == 0)
+			std::cout << "\rmatching keypoint " << keyPointIdx << " out of " << m_keyPoints.size();
+
 		KeyPoint& kp = m_keyPoints[keyPointIdx];
 		const float* query = (const float*)&kp.m_worldPos;
 
@@ -248,6 +260,8 @@ void ScannedScene::matchKeyPoints()
 		}
 	}
 
+	std::cout << std::endl;
+
 
 	//clean up our mess...
 	for (size_t sensorIdx = 0; sensorIdx < nns.size(); sensorIdx++) {
@@ -257,5 +271,5 @@ void ScannedScene::matchKeyPoints()
 	}
 
 
-	std::cout << "TOTAL MATCHES FOUND " << m_keyPointMatches.size() << std::endl;
+	std::cout << "Total matches found: " << m_keyPointMatches.size() << std::endl;
 }

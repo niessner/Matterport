@@ -10,13 +10,15 @@
 
 
 #define X_GLOBAL_APP_STATE_FIELDS \
-	X(std::string, s_dataPath) \
-	X(std::string, s_sceneFileList) \
-	X(unsigned int, s_keyMatchSkip) \
-	X(unsigned int, s_numThresholds) \
-	X(float, s_siftMatchThresh) \
+	X(std::string, s_srcPath) \
+	X(std::string, s_outPath) \
+	X(float, s_matchThresh) \
+	X(float, s_responseThresh) \
+	X(unsigned int, s_maxNumScenes) \
+	X(unsigned int, s_maxNumSensFiles) \
 	X(unsigned int, s_maxNumImages) \
-	X(unsigned int, s_maxNumSensors)
+	X(unsigned int, s_outWidth) \
+	X(unsigned int, s_outHeight)
 
 
 #ifndef VAR_NAME

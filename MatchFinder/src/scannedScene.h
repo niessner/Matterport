@@ -62,12 +62,13 @@ public:
 			outFile << "\n";
 
 			const std::string sep = "\t";
-			outFile << "matchIdx" << sep << "m_sensorIdx" << sep << "m_imageIdx" << sep << "m_pixelPos" << sep << "m_depth" << sep << "m_worldPos" << sep << "m_offset" << "\n";
+			outFile << "matchIdx" << sep << "m_sensorIdx" << sep << "m_imageIdx" << sep << "m_pixelPos" << sep << "m_depth" << sep << "m_worldPos" << sep << "m_offset" << sep 
+				<< "m_size" << sep << "m_angle" << sep << "m_octave" << sep << "m_scale" << sep << "m_opencvPackOctave" << "\n";
 			for (size_t i = 0; i < matches.size(); i++) {
 				const KeyPoint& k0 = matches[i].m_kp0;
 				const KeyPoint& k1 = matches[i].m_kp1;
-				outFile << i << sep << k0.m_sensorIdx << sep << k0.m_imageIdx << sep << k0.m_pixelPos << sep << k0.m_depth << sep << k0.m_worldPos << sep << vec2f(0.0f) << "\n";
-				outFile << i << sep << k1.m_sensorIdx << sep << k1.m_imageIdx << sep << k1.m_pixelPos << sep << k1.m_depth << sep << k1.m_worldPos << sep << matches[i].m_offset << "\n";
+				outFile << i << sep << k0.m_sensorIdx << sep << k0.m_imageIdx << sep << k0.m_pixelPos << sep << k0.m_depth << sep << k0.m_worldPos << sep << vec2f(0.0f) << sep << k0.m_size << sep << k0.m_angle << sep << k0.m_octave << sep << k0.m_scale << sep << k0.m_opencvPackOctave << "\n";
+				outFile << i << sep << k1.m_sensorIdx << sep << k1.m_imageIdx << sep << k1.m_pixelPos << sep << k1.m_depth << sep << k1.m_worldPos << sep << matches[i].m_offset << sep << k1.m_size << sep << k1.m_angle << sep << k1.m_octave << sep << k1.m_scale << sep << k1.m_opencvPackOctave << "\n";
 			}
 		}
 
@@ -110,9 +111,12 @@ public:
 				sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
 				const std::string outFileColor = outPath + "/" + std::string(s);
 
-				std::cout << outFileColor << std::endl;
+				std::cout << "\r" << outFileColor;
 				FreeImageWrapper::saveImage(outFileColor, c);
+
+				if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
 			}
+			std::cout << std::endl;
 		}
 	}
 
