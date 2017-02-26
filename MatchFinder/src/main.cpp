@@ -9,13 +9,14 @@
 #include "scannedScene.h"
 #include "globalAppState.h"
 
+
 int main(int argc, char* argv[])
 {
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-	//_CrtSetBreakAlloc(1042);
 
+	 
 	try {
 		const std::string fileNameDescGlobalApp = "zParametersDefault.txt";
 		GAS::loadGlobalAppState(fileNameDescGlobalApp);
@@ -29,18 +30,20 @@ int main(int argc, char* argv[])
 		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
 			const std::string& s = rootDir.getDirectories()[dirIdx];
 			if (s == "archive") continue;
-
+			  
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 			 
 			ScannedScene ss(path, s);			
-
+			 
 			ss.findKeyPoints();
 			ss.matchKeyPoints();
 			ss.negativeKeyPoints();
 
 			bool useTorchOutput = true;
-			std::cout << "writing out matches to " << s << "_matches.txt | _negativ.txt" << std::endl;
+			std::cout << "writing out matches to " << outPath + "/" + s << "_matches.txt | _negativ.txt" << std::endl;
+
+			if (!util::directoryExists(outPath + "/" + s)) util::makeDirectory(outPath + "/" + s);
 			ss.saveMatches(outPath + "/" + s + "/" + "matches.txt", ss.getMatches(), useTorchOutput);
 			ss.saveMatches(outPath + "/" + s + "/" + "negatives.txt", ss.getNegatives(), useTorchOutput);
 
@@ -51,6 +54,8 @@ int main(int argc, char* argv[])
 			ss.saveImages(outPath + "/" + s + "/images/");
 
 			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
+
+			std::cout << std::endl;
 		}
 
 	}

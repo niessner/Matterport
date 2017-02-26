@@ -110,9 +110,12 @@ public:
 				sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
 				const std::string outFileColor = outPath + "/" + std::string(s);
 
-				std::cout << outFileColor << std::endl;
+				std::cout << "\r" << outFileColor;
 				FreeImageWrapper::saveImage(outFileColor, c);
+
+				if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
 			}
+			std::cout << std::endl;
 		}
 	}
 
