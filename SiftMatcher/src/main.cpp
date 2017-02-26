@@ -6,7 +6,7 @@
 
 #include "keyPoint.h"
 #include "imageHelper.h"
-#include "scannedScene.h"
+#include "images.h"
 #include "globalAppState.h"
 
 
@@ -22,40 +22,45 @@ int main(int argc, char* argv[])
 		GAS::loadGlobalAppState(fileNameDescGlobalApp);
 		std::cout << std::endl;
 		 
-		const std::string srcPath = GAS::get().s_srcPath;
-		const std::string outPath = GAS::get().s_outPath;
-		Directory rootDir(srcPath);
-		std::cout << "found " << rootDir.getDirectories().size() << " scenes " << std::endl;
+		std::string dataPath = GAS::get().s_dataPath;
+		if (!util::directoryExists(dataPath)) throw MLIB_EXCEPTION("data path (" + dataPath + ") does not exist");
+		if (!(dataPath.back() == '/' || dataPath.back() == '\\'))
+			dataPath.push_back('/');
+		const std::string sceneFileList = GAS::get().s_sceneFileList;
+		if (!util::fileExists(sceneFileList)) throw MLIB_EXCEPTION("scene file list (" + sceneFileList + ") does not exist");
+		std::vector<std::string> scenes;
+		{
+			std::ifstream s(sceneFileList);
+			if (!s.is_open()) throw MLIB_EXCEPTION("failed to open " + sceneFileList + " for read");
+			std::string line;
+			while (std::getline(s, line))
+				scenes.push_back(line);
+		}
+		//debugging
+		scenes = std::vector<std::string> {"17DRP5sb8fy"};
+		//debugging
+		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
-		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
-			const std::string& s = rootDir.getDirectories()[dirIdx];
+		const std::string logFile = "test.csv";
+		if (util::fileExists(logFile)) {
+			std::cout << "warning: log file " << logFile << " already exists, press key to delete and continue" << std::endl;
+			getchar();
+			util::deleteFile(logFile);
+		}
+
+		for (size_t dirIdx = 0; dirIdx < scenes.size(); dirIdx++) {
+			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
 			  
-			std::cout << "Loading Scene: " << s << std::endl;
-			const std::string path = srcPath + "/" + s;
+			std::cout << "Loading Scene images: " << s << std::endl;
+			const std::string path = dataPath + s;
 			 
-			ScannedScene ss(path, s);			
-			 
-			ss.findKeyPoints();
-			ss.matchKeyPoints();
-			ss.negativeKeyPoints();
+			Images images(path, s);	
 
-			bool useTorchOutput = true;
-			std::cout << "writing out matches to " << outPath + "/" + s << "_matches.txt | _negativ.txt" << std::endl;
-
-			if (!util::directoryExists(outPath + "/" + s)) util::makeDirectory(outPath + "/" + s);
-			ss.saveMatches(outPath + "/" + s + "/" + "matches.txt", ss.getMatches(), useTorchOutput);
-			ss.saveMatches(outPath + "/" + s + "/" + "negatives.txt", ss.getNegatives(), useTorchOutput);
-
-			//const size_t numPairs = 10;
-			//const size_t minMatches = 5;
-			//ss.visulizeMatches(numPairs, minMatches);
-
-			ss.saveImages(outPath + "/" + s + "/images/");
-
-			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
-
-			std::cout << std::endl;
+			const std::string filenamePos = path + "/matches.txt";
+			const std::string filenameNeg = path + "/negatives.txt";
+			images.loadGTMatches(filenamePos, filenameNeg);
+			images.matchKeyPoints(logFile);
 		}
 
 	}

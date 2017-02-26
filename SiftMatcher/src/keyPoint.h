@@ -14,22 +14,53 @@ public:
 	vec2f m_pixelPos;
 	float m_depth;
 	vec3f m_worldPos;
-	vec3f m_worldNormal;
+	//vec3f m_worldNormal;
 	float m_size;		//from the sift keypoint extractor
+	float m_angle;		//from the sift keypoint extractor
+	int m_octave;		//from the sift keypoint extractor
+	float m_scale;		//from the sift keypoint extractor
 	float m_response;	//from the sift keypoint extractor
+	int m_opencvPackOctave; //from the sift keypoint extractor (makes it easier to re-run opencv)
 
 	bool isSameImage(const KeyPoint& other) const {
 		if (m_sensorIdx == other.m_sensorIdx &&
 			m_imageIdx == other.m_imageIdx) return true;
 		else return false;
 	}
+
+	inline bool operator==(const KeyPoint& other) const {
+		if (m_sensorIdx == other.m_sensorIdx && m_imageIdx == other.m_imageIdx && 
+			m_pixelPos == other.m_pixelPos && m_depth == other.m_depth &&
+			m_size == other.m_size && m_angle == other.m_angle)
+			return true;
+
+		return false;
+	}
 };
 
-class KeyPointFinder {
-public:
-	//! returns the key points (x, y, size, response)
-	static std::vector<vec4f> findKeyPoints(const ColorImageR8G8B8& image, unsigned int maxNumKeyPoints, float minResponse);
-private:
+template<>
+struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
+	size_t operator()(const vec2ui& v) const {
+		//TODO larger prime number (64 bit) to match size_t
+		const size_t p0 = 73856093;
+		const size_t p1 = 19349669;
+		//const size_t p2 = 83492791;
+		const size_t res = ((size_t)v.x * p0) ^ ((size_t)v.y * p1);// ^ ((size_t)v.z * p2);
+		return res;
+	}
+};
+
+//warning: doesn't take into account sensor idx
+template<>
+struct std::hash<KeyPoint> : public std::unary_function < KeyPoint, size_t > {
+	size_t operator()(const KeyPoint& v) const {
+		//TODO larger prime number (64 bit) to match size_t
+		const size_t p0 = 73856093;
+		const size_t p1 = 19349669;
+		const size_t p2 = 83492791;
+		const size_t res = ((size_t)v.m_imageIdx * p0) ^ ((size_t)math::round(v.m_pixelPos.x) * p1) ^ ((size_t)math::round(v.m_pixelPos.y) * p2);
+		return res;
+	}
 };
 
 
@@ -46,24 +77,26 @@ inline std::ostream& operator<<(std::ostream& os, const KeyPoint& kp) {
 
 class KeyPointMatch {
 public:
-	KeyPoint m_kp0;
-	KeyPoint m_kp1;
+	size_t m_kp0; //indexes into the keypoints array
+	size_t m_kp1; //indexes into the keypoints array
 	vec2f m_offset;	//re-projection offset when m_kp0 is projected into m_kp1;
 
-	bool isSameImagePair(const KeyPointMatch& other) const {
-		if (m_kp0.m_sensorIdx == other.m_kp0.m_sensorIdx &&
-			m_kp0.m_imageIdx == other.m_kp0.m_imageIdx &&
-			m_kp1.m_sensorIdx == other.m_kp1.m_sensorIdx &&
-			m_kp1.m_imageIdx == other.m_kp1.m_imageIdx)
+	bool isSameImagePair(const KeyPointMatch& other, const std::vector<KeyPoint>& keys) const {
+		if (keys[m_kp0].m_sensorIdx == keys[other.m_kp0].m_sensorIdx &&
+			keys[m_kp0].m_imageIdx == keys[other.m_kp0].m_imageIdx &&
+			keys[m_kp1].m_sensorIdx == keys[other.m_kp1].m_sensorIdx &&
+			keys[m_kp1].m_imageIdx == keys[other.m_kp1].m_imageIdx)
 			return true;
 		else return false;
 	}
 };
 
-inline std::ostream& operator<<(std::ostream& os, const KeyPointMatch& kpm) {
-	os << VAR_NAME(kpm.m_kp0) << "\n" << kpm.m_kp0;
-	os << VAR_NAME(kpm.m_kp1) << "\n" << kpm.m_kp1;
-	os << VAR_NAME(kpm.m_offset) << " = " << kpm.m_offset << std::endl;
-	return os;
-}
+class KeyPointMatcher {
+public:
+	static void matchKeyPoints(const std::vector<std::vector<ColorImageR8G8B8>>& images, const std::vector<KeyPoint>& keyPoints,
+		const std::vector<KeyPointMatch>& keysToMatch, std::vector<float>& matchDists);
 
+	//run detect-extract-match on the images
+	static void debug(const std::vector<std::vector<ColorImageR8G8B8>>& images);
+private:
+};

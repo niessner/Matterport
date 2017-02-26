@@ -1,6 +1,15 @@
 
 
 //s_srcPath = "W:/data/matterport/v1_converted";
-s_dataPath = "//falas/Datasets/Matterport/Matching/";
+s_dataPath = "//tirion/share/datasets/Matterport/Matching/";
+s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
+s_maxNumSensors = 3;
 
+s_numThresholds = 1000;
+s_keyMatchSkip = 10;
 s_siftMatchThresh = 50.0f;
+
+s_maxNumImages = 0
+
+//debugging
+s_dataPath = "../MatchFinder/output/";
