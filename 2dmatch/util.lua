@@ -143,15 +143,29 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     return anchorPatch,matchPatch,nonMatchPatch
 end
 
+--remove trailing/leading whitespace from string
+function trim(s)
+    return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
 
 -- read h5 filename list
-function getDataFiles(input_file)
+-- specify base path to filter out scenes that don't exist
+function getDataFiles(input_file, base_path)
     assert(paths.filep(input_file))
-    local train_files = {}
+    local data_files = {}
     for line in io.lines(input_file) do
-        train_files[#train_files+1] = line
+        local scene = trim(line)
+        if base_path then
+            if paths.dirp(paths.concat(base_path, scene)) then
+                data_files[#data_files+1] = scene
+            else
+                print('warning: skipping non-existent scene ' .. scene)
+            end
+        else 
+            data_files[#data_files+1] = scene
+        end
     end
-    return train_files
+    return data_files
 end
 
 -- Lookup filenames in directory (with search query string)

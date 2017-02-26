@@ -6,9 +6,9 @@ require 'optim'
 
 -- Custom files
 require 'model'
-require 'util'
 require 'sys'
 -- require 'qtwidget' -- for visualizing images
+dofile('util.lua')
 
 local basePath = '/mnt/raid/datasets/Matterport/Matching/'
 
@@ -23,7 +23,7 @@ opt_string = [[
     --epoch_step            (default 20)            epoch step
     -g,--gpu_index          (default 0)             GPU index (start from 0)
     --max_epoch             (default 200)	        maximum number of epochs
-    --train_data            (default "scenes_train.txt")     txt file containing train
+    --train_data            (default "scenes_trainval.txt")     txt file containing train
     --test_data             (default "scenes_test.txt")      txt file containing test
     --patchSize             (default 64)            patch size to extract (resized to 224)
     --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
@@ -60,8 +60,8 @@ parameters, gradParameters = model:getParameters()
 
 
 -- load training and testing files
-train_files = getDataFiles(paths.concat(basePath,opt.train_data))
-test_files = getDataFiles(paths.concat(basePath,opt.test_data))
+train_files = getDataFiles(paths.concat(basePath,opt.train_data), basePath) --filter out non-existent scenes
+test_files = getDataFiles(paths.concat(basePath,opt.test_data), basePath)   --filter out non-existent scenes
 print(train_files)
 print(test_files)
 

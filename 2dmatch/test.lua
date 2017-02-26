@@ -2,7 +2,7 @@ require 'cutorch';
 require 'cunn';
 require 'cudnn'
 require 'image'
-require 'util'
+dofile('util.lua')
 -- require 'qtwidget'
 
 -- example usage:  th test.lua --gpu_index 0 --model ~/data/matthias/Matterport/2dmatch/logs/model_20000.net --train_data none test_data scenes_test.txt
