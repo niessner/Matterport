@@ -97,7 +97,7 @@ std::vector<KeyPoint> KeyPointFinder::findKeyPoints(const vec2ui& sensImIdxs, co
 			int layer = (k.octave >> 8) & 255;
 			octave = octave < 128 ? octave : (-128 | octave);
 			float scale = octave >= 0 ? 1.f / (1 << octave) : (float)(1 << -octave);
-			res.push_back(KeyPoint(sensImIdxs.x, sensImIdxs.y, vec2f(k.pt.x, k.pt.y), k.size, k.angle, octave, scale, k.response)); //opencv sift octave missing the unpack
+			res.push_back(KeyPoint(sensImIdxs.x, sensImIdxs.y, vec2f(k.pt.x, k.pt.y), k.size, k.angle, octave, scale, k.response, k.octave)); 
 		}
 	}
 

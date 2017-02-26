@@ -20,6 +20,7 @@ public:
 	int m_octave;		//from the sift keypoint extractor
 	float m_scale;		//from the sift keypoint extractor
 	float m_response;	//from the sift keypoint extractor
+	int m_opencvPackOctave; //from the sift keypoint extractor (makes it easier to re-run opencv)
 
 	KeyPoint()
 	{
@@ -32,14 +33,15 @@ public:
 		m_size = -std::numeric_limits<float>::infinity();
 		m_angle = -std::numeric_limits<float>::infinity();
 		m_octave = -1;
+		m_opencvPackOctave = -1;
 		m_scale = -std::numeric_limits<float>::infinity();
 		m_response = -std::numeric_limits<float>::infinity();
 	}
 
 	KeyPoint(unsigned int sensorIdx, unsigned int imageIdx, const vec2f& pixelPos,
-		float size, float angle, int octave, float scale, float response)
+		float size, float angle, int octave, float scale, float response, int packOctave)
 		: m_sensorIdx(sensorIdx), m_imageIdx(imageIdx), m_pixelPos(pixelPos), m_size(size),
-		m_angle(angle), m_scale(scale), m_octave(octave), m_response(response)
+		m_angle(angle), m_scale(scale), m_octave(octave), m_response(response), m_opencvPackOctave(packOctave)
 	{
 		m_depth = -std::numeric_limits<float>::infinity();
 		m_worldPos = vec3f(-std::numeric_limits<float>::infinity());
@@ -48,10 +50,10 @@ public:
 
 	//KeyPoint(unsigned int sensorIdx, unsigned int imageIdx, const vec2f& pixelPos,
 	//	float depth, const vec3f& worldPos, const vec3f& worldNormal,
-	//	float size, float angle, int octave, float scale, float response)
+	//	float size, float angle, int octave, float scale, float response, int packOctave)
 	//	: m_sensorIdx(sensorIdx), m_imageIdx(imageIdx), m_pixelPos(pixelPos),
 	//	m_depth(depth), m_worldPos(worldPos), m_worldNormal(worldNormal),
-	//	m_size(size), m_angle(angle), m_scale(scale), m_octave(octave), m_response(response)
+	//	m_size(size), m_angle(angle), m_scale(scale), m_octave(octave), m_response(response), m_opencvPackOctave(packOctave)
 	//{}
 
 	bool isSameImage(const KeyPoint& other) const {

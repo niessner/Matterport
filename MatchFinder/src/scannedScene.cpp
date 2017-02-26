@@ -109,17 +109,18 @@ void ScannedScene::findKeyPoints()
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
 				vec2ui loc = math::round(rawkp.m_pixelPos);
 				if (d.isValid(loc) && d.isValidCoordinate(loc + padding) && d.isValidCoordinate(loc - padding)) {
-					KeyPoint kp;
+					KeyPoint kp = rawkp;
 					kp.m_depth = d(loc);
 					kp.m_imageIdx = (unsigned int)imageIdx;
 					kp.m_sensorIdx = (unsigned int)sensorIdx;
-					//kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
+					////kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
 					kp.m_pixelPos = vec2f(loc);
-					kp.m_size = rawkp.m_size;
-					kp.m_angle = rawkp.m_angle;
-					kp.m_octave = rawkp.m_octave;
-					kp.m_scale = rawkp.m_scale;
-					kp.m_response = rawkp.m_response;
+					//kp.m_size = rawkp.m_size;
+					//kp.m_angle = rawkp.m_angle;
+					//kp.m_octave = rawkp.m_octave;
+					//kp.m_scale = rawkp.m_scale;
+					//kp.m_response = rawkp.m_response;
+					//kp.m_opencvPackOctave = rawkp.m_opencvPackOctave;
 
 					vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
