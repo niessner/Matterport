@@ -15,7 +15,7 @@ s_maxNumImages = 0;
 //debug
 s_maxNumScenes = 1;
 s_maxNumSensFiles = 1;
-s_maxNumImages = 50;
+s_maxNumImages = 0;
 
 //output dimensions
 s_outWidth = 640;

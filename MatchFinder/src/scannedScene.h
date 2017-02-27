@@ -16,7 +16,7 @@ public:
 		for (auto* sd : m_sds) {
 			SAFE_DELETE(sd);
 		}
-	} 
+	}
 
 	void load(const std::string& path, const std::string& name) {
 
@@ -42,13 +42,13 @@ public:
 	void findKeyPoints();
 
 	void negativeKeyPoints();
-	
+
 	//matches all previously found key points between all images and loaded sens files
 	void matchKeyPoints();
 
 	void saveMatches(const std::string& filename, const std::vector<KeyPointMatch>& matches, bool torch = true) const {
 		std::ofstream outFile(filename);
-		
+
 		if (!torch) {	//human readable one
 			outFile << "SceneName " << m_name << " ( " << matches.size() << " matches )\n";
 			outFile << "\n";
@@ -62,7 +62,7 @@ public:
 			outFile << "\n";
 
 			const std::string sep = "\t";
-			outFile << "matchIdx" << sep << "m_sensorIdx" << sep << "m_imageIdx" << sep << "m_pixelPos" << sep << "m_depth" << sep << "m_worldPos" << sep << "m_offset" << sep 
+			outFile << "matchIdx" << sep << "m_sensorIdx" << sep << "m_imageIdx" << sep << "m_pixelPos" << sep << "m_depth" << sep << "m_worldPos" << sep << "m_offset" << sep
 				<< "m_size" << sep << "m_angle" << sep << "m_octave" << sep << "m_scale" << sep << "m_opencvPackOctave" << "\n";
 			for (size_t i = 0; i < matches.size(); i++) {
 				const KeyPoint& k0 = matches[i].m_kp0;
@@ -91,7 +91,7 @@ public:
 
 		if (!util::directoryExists(outPath)) {
 			util::makeDirectory(outPath);
-		} 
+		}
 
 		for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
 			SensorData* sd = m_sds[sensorIdx];
@@ -121,6 +121,41 @@ public:
 	}
 
 private:
+	static vec3f computeCameraSpacePosition(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
+	{
+		MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
+
+		float depth = depthImage(x, y);
+		if (depth != -std::numeric_limits<float>::infinity()) {
+			const vec3f res = intrinsicsInv*vec3f(x*depth, y*depth, depth);
+			return res;
+		}
+		return vec3f(-std::numeric_limits<float>::infinity());
+	}
+	static vec3f computeNormal(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
+	{
+		MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
+
+		vec3f normal = vec3f(-std::numeric_limits<float>::infinity());
+
+		if (x > 0 && x + 1 < depthImage.getWidth() && y > 0 && y + 1 < depthImage.getHeight()) {
+			const vec3f CC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 0); //d_input[(y + 0)*width + (x + 0)];
+			const vec3f PC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 1); //d_input[(y + 1)*width + (x + 0)];
+			const vec3f CP = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 1, y + 0); //d_input[(y + 0)*width + (x + 1)];
+			const vec3f MC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y - 1); //d_input[(y - 1)*width + (x + 0)];
+			const vec3f CM = computeCameraSpacePosition(intrinsicsInv, depthImage, x - 1, y + 0); //d_input[(y + 0)*width + (x - 1)];
+
+			if (CC.x != -std::numeric_limits<float>::infinity() && PC.x != -std::numeric_limits<float>::infinity() &&
+				CP.x != -std::numeric_limits<float>::infinity() && MC.x != -std::numeric_limits<float>::infinity() &&
+				CM.x != -std::numeric_limits<float>::infinity()) {
+				const vec3f n = (PC - MC) ^ (CP - CM);
+				const float l = n.length();
+				if (l > 0.0f) normal = n / -l; //d_output[y*width + x] = make_float4(n / -l, 1.0f);
+			}
+		}
+		return normal;
+	}
+
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
 

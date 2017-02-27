@@ -83,8 +83,6 @@ std::vector<KeyPoint> KeyPointFinder::findKeyPoints(const vec2ui& sensImIdxs, co
 	unsigned int noDepthCount = 0;
 	for (unsigned int i = 0; i < keypoints.size(); i++) {
 		const cv::KeyPoint& k = keypoints[i];
-		//if (k.size < 3) continue; //!!! TODO CHECK STATISTICS
-		//if (k.size < 5) continue; //!!! TODO CHECK STATISTICS
 
 		//std::cout << "response: " << k.response << std::endl;
 		if (k.response < minResponse) continue;

@@ -14,7 +14,7 @@ public:
 	vec2f m_pixelPos;
 	float m_depth;
 	vec3f m_worldPos;
-	//vec3f m_worldNormal;
+	vec3f m_worldNormal;
 	float m_size;		//from the sift keypoint extractor
 	float m_angle;		//from the sift keypoint extractor
 	int m_octave;		//from the sift keypoint extractor
@@ -29,7 +29,7 @@ public:
 		m_pixelPos = vec2f(-std::numeric_limits<float>::infinity());
 		m_depth = -std::numeric_limits<float>::infinity();
 		m_worldPos = vec3f(-std::numeric_limits<float>::infinity());
-		//m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
+		m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
 		m_size = -std::numeric_limits<float>::infinity();
 		m_angle = -std::numeric_limits<float>::infinity();
 		m_octave = -1;
@@ -45,7 +45,7 @@ public:
 	{
 		m_depth = -std::numeric_limits<float>::infinity();
 		m_worldPos = vec3f(-std::numeric_limits<float>::infinity());
-		//m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
+		m_worldNormal = vec3f(-std::numeric_limits<float>::infinity());
 	}
 
 	//KeyPoint(unsigned int sensorIdx, unsigned int imageIdx, const vec2f& pixelPos,

@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 
 	try {
 		const std::string matterportPath = "//tirion/share/datasets/Matterport/Matching/";
-		const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output/output-test-5000/";
+		const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output/output-1-28770/";
 		const std::string trainTestPrefix = "scenes_";
 		const std::vector<std::string> phases = { "test" }; //the current one is train/test for same scene
 

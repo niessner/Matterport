@@ -2,7 +2,7 @@
 
 //s_srcPath = "W:/data/matterport/v1_converted";
 s_dataPath = "//tirion/share/datasets/Matterport/Matching/";
-s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
+s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test_small.txt";
 s_maxNumSensors = 3;
 
 s_numThresholds = 1000;

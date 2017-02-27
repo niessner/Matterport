@@ -74,6 +74,40 @@ void bilateralFilter(BaseImage<vec3uc>& img, float sigmaD, float sigmaR) {
 	}
 	img = res;
 }
+void bilateralFilter(DepthImage32& d, float sigmaD, float sigmaR) {
+
+	DepthImage32 res(d.getWidth(), d.getHeight());
+	res.setInvalidValue(d.getInvalidValue());
+
+	const int kernelRadius = (int)ceil(2.0*sigmaD);
+	for (unsigned int y = 0; y < d.getHeight(); y++) {
+		for (unsigned int x = 0; x < d.getWidth(); x++) {
+			res.setInvalid(x, y);
+
+			float sum = 0.0f;
+			float sumWeight = 0.0f;
+
+			if (d.isValid(x, y)) {
+				const float center = d(x, y);
+
+				for (int m = x - kernelRadius; m <= (int)x + kernelRadius; m++) {
+					for (int n = y - kernelRadius; n <= (int)y + kernelRadius; n++) {
+						if (m >= 0 && n >= 0 && m < (int)d.getWidth() && n < (int)d.getHeight()) {
+							if (d.isValid(m, n)) {
+								const float current = d(m, n);
+								const float weight = gaussD(sigmaD, m - x, n - y)*gaussR(sigmaR, current - center);
+								sumWeight += weight;
+								sum += weight*current;
+							}
+						}
+					}
+				}
+				if (sumWeight > 0.0f) res(x, y) = sum / sumWeight;
+			}
+		}
+	}
+	d = res;
+}
 
 void ScannedScene::findKeyPoints()
 {
@@ -86,6 +120,33 @@ void ScannedScene::findKeyPoints()
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			DepthImage32 d = sd->computeDepthImage(imageIdx);
+			DepthImage32 dfilt = d; bilateralFilter(dfilt, 2.0f, 0.1f);
+			//{ //debugging
+			//	ColorImageR32G32B32 normalImage(dfilt.getWidth(), dfilt.getHeight());
+			//	for (const auto& p : dfilt) {
+			//		vec3f n = computeNormal(intrinsicInv, dfilt, p.x, p.y);
+			//		normalImage(p.x, p.y) = n;
+			//	}
+			//	ColorImageR32G32B32 visNormalImage = normalImage;
+			//	for (auto& p : visNormalImage) p.value = (p.value + 1.0f) / 0.5f; //scale [-1,1] to [0,1]
+			//	FreeImageWrapper::saveImage("_depth.png", ColorImageR32G32B32(dfilt));
+			//	FreeImageWrapper::saveImage("_normal.png", visNormalImage);
+			//	const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
+			//	PointCloudf pc, pcw;
+			//	for (const auto& p : d) {
+			//		const vec3f n = normalImage(p.x, p.y);
+			//		if (n.x != -std::numeric_limits<float>::infinity()) {
+			//			pc.m_points.push_back(intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value));
+			//			pc.m_normals.push_back(n);
+			//			pcw.m_points.push_back(camToWorld * (intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value)));
+			//			pcw.m_normals.push_back((camToWorld.getRotation() * n).getNormalized());
+			//		}
+			//	}
+			//	PointCloudIOf::saveToFile("_pcCam.ply", pc);
+			//	PointCloudIOf::saveToFile("_pcWorld.ply", pcw);
+			//	std::cout << "waiting..." << std::endl;
+			//	getchar();
+			//} //debugging
 
 			//float sigmaD = 2.0f;	
 			//float sigmaR = 0.1f;
@@ -122,8 +183,12 @@ void ScannedScene::findKeyPoints()
 					//kp.m_response = rawkp.m_response;
 					//kp.m_opencvPackOctave = rawkp.m_opencvPackOctave;
 
-					vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
+					const vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
+
+					const vec3f normal = computeNormal(intrinsicInv, dfilt, loc.x, loc.y); 
+					if (normal.x == -std::numeric_limits<float>::infinity()) continue;
+					kp.m_worldNormal = (camToWorld.getRotation() * normal).getNormalized();
 
 					validKeyPoints++;
 
@@ -233,9 +298,34 @@ void ScannedScene::matchKeyPoints()
 				auto resPair = nn->fixedRadiusDist(query, maxK, radius);
 				auto resDist = nn->getDistances((UINT)res.size());
 				for (size_t j = 0; j < res.size(); j++) {
+					const KeyPoint& kp0 = m_keyPoints[keyPointIdx];
+					const KeyPoint& kp1 = m_keyPoints[res[j] + nn_offsets[sensorIdx_dst][frameIdx_dst]];
+					//check world normals
+					float angleDist = std::acos(kp0.m_worldNormal | kp1.m_worldNormal);
+					if (angleDist > 2.0f) continue; //ignore with world normals > ~115 degrees apart
+					
+					////debugging
+					//const float degrees = math::radiansToDegrees(angleDist);
+					//if (degrees > 90) { 
+					//	KeyPointMatch m;
+					//	m.m_kp0 = kp0;
+					//	m.m_kp1 = kp1;
+					//	MatchVisualization mv;
+					//	mv.visulizeMatches(m_sds, std::vector<KeyPointMatch>(1, m), 10);
+					//	m_sds[kp0.m_sensorIdx]->saveToPointCloud("frame0.ply", kp0.m_imageIdx);
+					//	MeshDataf keymesh = Shapesf::sphere(0.03f, kp0.m_worldPos, 10, 10, vec4f(1.0f, 0.0f, 0.0f, 1.0f)).computeMeshData();
+					//	keymesh.merge(Shapesf::cylinder(kp0.m_worldPos, kp0.m_worldPos + kp0.m_worldNormal * 0.2f, .02f, 10, 10, vec4f(1.0f, 0.0f, 0.0f, 1.0f)).computeMeshData());
+					//	MeshIOf::saveToFile("frame0_key.ply", keymesh);
+					//	m_sds[kp1.m_sensorIdx]->saveToPointCloud("frame1.ply", kp1.m_imageIdx);
+					//	keymesh = Shapesf::sphere(0.03f, kp1.m_worldPos, 10, 10, vec4f(0.0f, 1.0f, 0.0f, 1.0f)).computeMeshData();
+					//	keymesh.merge(Shapesf::cylinder(kp1.m_worldPos, kp1.m_worldPos + kp1.m_worldNormal * 0.2f, .02f, 10, 10, vec4f(0.0f, 1.0f, 0.0f, 1.0f)).computeMeshData());
+					//	MeshIOf::saveToFile("frame1_key.ply", keymesh);
+					//	int a = 5;
+					//} //debugging
+
 					KeyPointMatch m;
-					m.m_kp0 = m_keyPoints[keyPointIdx];
-					m.m_kp1 = m_keyPoints[res[j] + nn_offsets[sensorIdx_dst][frameIdx_dst]];
+					m.m_kp0 = kp0;
+					m.m_kp1 = kp1;
 
 					mat4f worldToCam_kp1 = m_sds[m.m_kp1.m_sensorIdx]->m_frames[m.m_kp1.m_imageIdx].getCameraToWorld().getInverse();
 					vec3f p = worldToCam_kp1 * m.m_kp0.m_worldPos;
