@@ -81,6 +81,11 @@ public:
 	size_t m_kp1; //indexes into the keypoints array
 	vec2f m_offset;	//re-projection offset when m_kp0 is projected into m_kp1;
 
+	KeyPointMatch() {
+		m_kp0 = (size_t)-1;
+		m_kp1 = (size_t)-1;
+	}
+
 	bool isSameImagePair(const KeyPointMatch& other, const std::vector<KeyPoint>& keys) const {
 		if (keys[m_kp0].m_sensorIdx == keys[other.m_kp0].m_sensorIdx &&
 			keys[m_kp0].m_imageIdx == keys[other.m_kp0].m_imageIdx &&
@@ -94,7 +99,7 @@ public:
 class KeyPointMatcher {
 public:
 	static void matchKeyPoints(const std::vector<std::vector<ColorImageR8G8B8>>& images, const std::vector<KeyPoint>& keyPoints,
-		const std::vector<KeyPointMatch>& keysToMatch, std::vector<float>& matchDists);
+		const std::vector<KeyPointMatch>& keysToMatch, std::vector<float>& matchDists, const std::string& featureType);
 
 	//run detect-extract-match on the images
 	static void debug(const std::vector<std::vector<ColorImageR8G8B8>>& images);

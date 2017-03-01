@@ -91,6 +91,12 @@ int main(int argc, char* argv[])
 		const std::string fileNameDescGlobalApp = "zParametersDefault.txt";
 		GAS::loadGlobalAppState(fileNameDescGlobalApp);
 		std::cout << std::endl;
+
+		//check valid feature type
+		std::unordered_set<std::string> validFeatureTypes = { "SIFT", "ORB" };
+		GAS::get().s_featureType = util::toUpper(GAS::get().s_featureType);
+		if (validFeatureTypes.find(GAS::get().s_featureType) == validFeatureTypes.end())
+			throw MLIB_EXCEPTION("invalid feature type: " + GAS::get().s_featureType);
 		 
 		std::string dataPath = GAS::get().s_dataPath;
 		if (!util::directoryExists(dataPath)) throw MLIB_EXCEPTION("data path (" + dataPath + ") does not exist");
@@ -111,7 +117,7 @@ int main(int argc, char* argv[])
 		//debugging
 		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
-		const std::string logFile = "test.csv";
+		const std::string logFile = GAS::get().s_outputFile;
 		if (util::fileExists(logFile)) {
 			std::cout << "warning: log file " << logFile << " already exists, press key to delete and continue" << std::endl;
 			getchar();

@@ -13,10 +13,13 @@
 	X(std::string, s_dataPath) \
 	X(std::string, s_sceneFileList) \
 	X(unsigned int, s_keyMatchSkip) \
+	X(unsigned int, s_keyPadding) \
 	X(unsigned int, s_numThresholds) \
-	X(float, s_siftMatchThresh) \
 	X(unsigned int, s_maxNumImages) \
-	X(unsigned int, s_maxNumSensors)
+	X(unsigned int, s_maxNumSensors) \
+	X(std::string, s_featureType) \
+	X(std::string, s_outputFile)
+	//X(float, s_siftMatchThresh)
 
 
 #ifndef VAR_NAME
