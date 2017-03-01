@@ -85,12 +85,20 @@ void convertToSens(const std::string& srcPath, const std::string& outFile)
 				unsigned int width, height;
 				float fx, fy, mx, my;
 				float k[5];
+				float k1, k2, p1, p2, k3;
 				{
 					std::ifstream inFile(intrFile);
 					inFile >> width >> height;
 					inFile >> fx >> fy >> mx >> my;
-					for (unsigned i = 0; i < 5; i++) inFile >> k[i];
+					//for (unsigned i = 0; i < 5; i++) inFile >> k[i];
+					inFile >> k1 >> k2 >> p1 >> p2 >> k3;
 				}
+				k[0] = k1;
+				k[1] = k2;
+				k[2] = p1;
+				k[3] = p2;
+				k[4] = k3;
+
 
 				if (fidx == 0 && poseIdx == 0) {
 					SensorData::CalibrationData calibrationDepth(
@@ -118,6 +126,10 @@ void convertToSens(const std::string& srcPath, const std::string& outFile)
 				colorImage = undistort(colorImage, sd[camIdx].m_calibrationColor.m_intrinsic, k);
 				depthImage16 = DepthImage16(undistort(depthImage16, sd[camIdx].m_calibrationDepth.m_intrinsic, k));
 				sd[camIdx].addFrame(colorImage.getData(), depthImage16.getData(), pose);
+
+				//FreeImageWrapper::saveImage("test.png", colorImage);
+				//std::cout << "bla" << std::endl;
+				//getchar();
 			}
 		}
 	}
@@ -143,10 +155,13 @@ int main(int argc, char* argv[])
 
 		//single debug
 		if (true) {
-			const std::string s = "D7N2EKCX4Sj";
-			const std::string path = "W:/data/matterport/v1_converted/" + s;
+			//const std::string s = "D7N2EKCX4Sj";
+			//const std::string path = "W:/data/matterport/v1_converted/" + s;
+			
+			const std::string s = "1LXtFkjw3qL";
+			const std::string path = "../testdata/";
 			std::cout << "converting: " << path << std::endl;
-			convertToSens(path + "/data/", path + "/" + s + ".sens");
+			convertToSens(path + "/" + s + "/data/", path + "/" + s + ".sens");
 
 			std::cout << "<< press key to exit >>" << std::endl;
 			getchar();
