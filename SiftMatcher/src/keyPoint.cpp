@@ -85,8 +85,6 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 		cv::Mat mat;
 		toItensityImageAsMat(images[im.first.x][im.first.y], mat);
 
-		const auto tmp = imKeypoints;
-
 		//cv::imwrite("test.jpg", mat);
 		cv::Mat imDescriptors; //rows->#keys, cols->desc size (128)
 		extractor->compute(mat, imKeypoints, imDescriptors);

@@ -34,7 +34,9 @@ int main(int argc, char* argv[])
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s;
 			 
-			ScannedScene ss(path, s);			
+			ScannedScene ss(path, s);		
+
+			ss.saveImages(outPath + "/" + s + "/images/");
 			 
 			ss.findKeyPoints();
 			ss.matchKeyPoints();

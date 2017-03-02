@@ -112,6 +112,8 @@ void bilateralFilter(DepthImage32& d, float sigmaD, float sigmaR) {
 void ScannedScene::findKeyPoints()
 {
 	m_keyPoints.clear();
+	const float depthSigmaD = GAS::get().s_depthFilterSigmaD;
+	const float depthSigmaR = GAS::get().s_depthFilterSigmaR;
 
 	for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
@@ -120,13 +122,9 @@ void ScannedScene::findKeyPoints()
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			DepthImage32 d = sd->computeDepthImage(imageIdx);
-			DepthImage32 dfilt = d; bilateralFilter(dfilt, 2.0f, 0.1f);
+			DepthImage32 dfilt = d; bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
+			PointImage normalImage = SensorData::computeNormals(intrinsicInv, dfilt);
 			//{ //debugging
-			//	ColorImageR32G32B32 normalImage(dfilt.getWidth(), dfilt.getHeight());
-			//	for (const auto& p : dfilt) {
-			//		vec3f n = computeNormal(intrinsicInv, dfilt, p.x, p.y);
-			//		normalImage(p.x, p.y) = n;
-			//	}
 			//	ColorImageR32G32B32 visNormalImage = normalImage;
 			//	for (auto& p : visNormalImage) p.value = (p.value + 1.0f) / 0.5f; //scale [-1,1] to [0,1]
 			//	FreeImageWrapper::saveImage("_depth.png", ColorImageR32G32B32(dfilt));
@@ -134,11 +132,12 @@ void ScannedScene::findKeyPoints()
 			//	const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
 			//	PointCloudf pc, pcw;
 			//	for (const auto& p : d) {
-			//		const vec3f n = normalImage(p.x, p.y);
+			//		const vec3f& n = normalImage(p.x, p.y);
 			//		if (n.x != -std::numeric_limits<float>::infinity()) {
-			//			pc.m_points.push_back(intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value));
+			//			const vec3f c = intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value);
+			//			pc.m_points.push_back(c);
 			//			pc.m_normals.push_back(n);
-			//			pcw.m_points.push_back(camToWorld * (intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value)));
+			//			pcw.m_points.push_back(camToWorld * c);
 			//			pcw.m_normals.push_back((camToWorld.getRotation() * n).getNormalized());
 			//		}
 			//	}
@@ -186,7 +185,7 @@ void ScannedScene::findKeyPoints()
 					const vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
 
-					const vec3f normal = computeNormal(intrinsicInv, dfilt, loc.x, loc.y); 
+					const vec3f normal = normalImage(loc); 
 					if (normal.x == -std::numeric_limits<float>::infinity()) continue;
 					kp.m_worldNormal = (camToWorld.getRotation() * normal).getNormalized();
 
@@ -362,4 +361,51 @@ void ScannedScene::matchKeyPoints()
 
 
 	std::cout << "Total matches found: " << m_keyPointMatches.size() << std::endl;
+}
+
+void ScannedScene::saveImages(const std::string& outPath) const
+{
+	if (!util::directoryExists(outPath)) {
+		util::makeDirectory(outPath);
+	}
+
+	const float depthSigmaD = GAS::get().s_depthFilterSigmaD;
+	const float depthSigmaR = GAS::get().s_depthFilterSigmaR;
+
+	for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
+		SensorData* sd = m_sds[sensorIdx];
+		const mat4f depthIntrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
+
+		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
+			DepthImage32 d = sd->computeDepthImage(imageIdx);
+			//TODO depth image?
+
+			unsigned int outWidth = GAS::get().s_outWidth;
+			unsigned int outHeight = GAS::get().s_outHeight;
+			c.resize(outWidth, outHeight);
+			d.resize(outWidth, outHeight);
+			DepthImage32 dfilt = d; bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
+			PointImage normal = SensorData::computeNormals(depthIntrinsicInv, dfilt); //TODO HERE
+			for (auto& p : normal) {
+				if (p.value.x == -std::numeric_limits<float>::infinity())
+					p.value = vec3f(0.0f, 0.0f, 0.0f);
+				else p.value = 0.5f * (p.value + 1.0f);
+			}
+			normal.setInvalidValue(vec3f(0.0f, 0.0f, 0.0f));
+
+			char s[256];
+			sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
+			const std::string outFileColor = outPath + "/" + std::string(s);
+			sprintf(s, "normal-%02d-%06d.png", (UINT)sensorIdx, (UINT)imageIdx);
+			const std::string outFileNormal = outPath + "/" + std::string(s);
+
+			std::cout << "\r" << outFileColor;
+			FreeImageWrapper::saveImage(outFileColor, c);
+			FreeImageWrapper::saveImage(outFileNormal, normal);
+
+			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
+		}
+		std::cout << std::endl;
+	}
 }

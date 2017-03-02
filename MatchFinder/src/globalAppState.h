@@ -18,7 +18,9 @@
 	X(unsigned int, s_maxNumSensFiles) \
 	X(unsigned int, s_maxNumImages) \
 	X(unsigned int, s_outWidth) \
-	X(unsigned int, s_outHeight)
+	X(unsigned int, s_outHeight) \
+	X(float, s_depthFilterSigmaD) \
+	X(float, s_depthFilterSigmaR)
 
 
 #ifndef VAR_NAME

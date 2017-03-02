@@ -87,74 +87,43 @@ public:
 		return m_keyPointNegatives;
 	}
 
-	void saveImages(const std::string& outPath) const {
-
-		if (!util::directoryExists(outPath)) {
-			util::makeDirectory(outPath);
-		}
-
-		for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
-			SensorData* sd = m_sds[sensorIdx];
-
-			for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
-				ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
-				//DepthImage32 d = sd->computeDepthImage(imageIdx);
-				//TODO depth imag
-				//TODO normal image
-
-				unsigned int outWidth = GAS::get().s_outWidth;
-				unsigned int outHeight = GAS::get().s_outHeight;
-				c.resize(outWidth, outHeight);
-
-
-				char s[256];
-				sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
-				const std::string outFileColor = outPath + "/" + std::string(s);
-
-				std::cout << "\r" << outFileColor;
-				FreeImageWrapper::saveImage(outFileColor, c);
-
-				if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
-			}
-			std::cout << std::endl;
-		}
-	}
+	void saveImages(const std::string& outPath) const;
 
 private:
-	static vec3f computeCameraSpacePosition(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
-	{
-		MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
+	//static vec3f computeCameraSpacePosition(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
+	//{
+	//	MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
 
-		float depth = depthImage(x, y);
-		if (depth != -std::numeric_limits<float>::infinity()) {
-			const vec3f res = intrinsicsInv*vec3f(x*depth, y*depth, depth);
-			return res;
-		}
-		return vec3f(-std::numeric_limits<float>::infinity());
-	}
-	static vec3f computeNormal(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
-	{
-		MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
+	//	float depth = depthImage(x, y);
+	//	if (depth != -std::numeric_limits<float>::infinity()) {
+	//		const vec3f res = intrinsicsInv*vec3f(x*depth, y*depth, depth);
+	//		return res;
+	//	}
+	//	return vec3f(-std::numeric_limits<float>::infinity());
+	//}
+	//static vec3f computeNormal(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
+	//{
+	//	MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
 
-		vec3f normal = vec3f(-std::numeric_limits<float>::infinity());
+	//	vec3f normal = vec3f(-std::numeric_limits<float>::infinity());
 
-		if (x > 0 && x + 1 < depthImage.getWidth() && y > 0 && y + 1 < depthImage.getHeight()) {
-			const vec3f CC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 0); //d_input[(y + 0)*width + (x + 0)];
-			const vec3f PC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 1); //d_input[(y + 1)*width + (x + 0)];
-			const vec3f CP = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 1, y + 0); //d_input[(y + 0)*width + (x + 1)];
-			const vec3f MC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y - 1); //d_input[(y - 1)*width + (x + 0)];
-			const vec3f CM = computeCameraSpacePosition(intrinsicsInv, depthImage, x - 1, y + 0); //d_input[(y + 0)*width + (x - 1)];
+	//	if (x > 0 && x + 1 < depthImage.getWidth() && y > 0 && y + 1 < depthImage.getHeight()) {
+	//		const vec3f CC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 0); //d_input[(y + 0)*width + (x + 0)];
+	//		const vec3f PC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 1); //d_input[(y + 1)*width + (x + 0)];
+	//		const vec3f CP = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 1, y + 0); //d_input[(y + 0)*width + (x + 1)];
+	//		const vec3f MC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y - 1); //d_input[(y - 1)*width + (x + 0)];
+	//		const vec3f CM = computeCameraSpacePosition(intrinsicsInv, depthImage, x - 1, y + 0); //d_input[(y + 0)*width + (x - 1)];
 
-			if (CC.x != -std::numeric_limits<float>::infinity() && PC.x != -std::numeric_limits<float>::infinity() &&
-				CP.x != -std::numeric_limits<float>::infinity() && MC.x != -std::numeric_limits<float>::infinity() &&
-				CM.x != -std::numeric_limits<float>::infinity()) {
-				const vec3f n = (PC - MC) ^ (CP - CM);
-				const float l = n.length();
-				if (l > 0.0f) normal = n / -l; //d_output[y*width + x] = make_float4(n / -l, 1.0f);
-			}
-		}
-		return normal;
-	}
+	//		if (CC.x != -std::numeric_limits<float>::infinity() && PC.x != -std::numeric_limits<float>::infinity() &&
+	//			CP.x != -std::numeric_limits<float>::infinity() && MC.x != -std::numeric_limits<float>::infinity() &&
+	//			CM.x != -std::numeric_limits<float>::infinity()) {
+	//			const vec3f n = (PC - MC) ^ (CP - CM);
+	//			const float l = n.length();
+	//			if (l > 0.0f) normal = n / -l; //d_output[y*width + x] = make_float4(n / -l, 1.0f);
+	//		}
+	//	}
+	//	return normal;
+	//}
 
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
