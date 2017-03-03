@@ -6,6 +6,109 @@ public:
 	ImageHelper() {}
 	~ImageHelper() {}
 
+
+	static inline float gaussR(float sigma, float dist)
+	{
+		return exp(-(dist*dist) / (2.0f*sigma*sigma));
+	}
+	static inline float gaussR(float sigma, const vec3f& d)
+	{
+		float dist = d.length();
+		return exp(-(dist*dist) / (2.0f*sigma*sigma));
+	}
+	static inline float gaussR(float sigma, const vec3uc& d)
+	{
+		vec3f _d(d);	//_d /= 255.0f;
+		float dist = _d.length();
+		return exp(-(dist*dist) / (2.0f*sigma*sigma));
+	}
+
+
+	static inline float linearR(float sigma, float dist)
+	{
+		return std::max(1.0f, std::min(0.0f, 1.0f - (dist*dist) / (2.0f*sigma*sigma)));
+	}
+
+	static inline float gaussD(float sigma, int x, int y)
+	{
+		return exp(-((x*x + y*y) / (2.0f*sigma*sigma)));
+	}
+
+	static inline float gaussD(float sigma, int x)
+	{
+		return exp(-((x*x) / (2.0f*sigma*sigma)));
+	}
+
+	static void bilateralFilter(BaseImage<vec3uc>& img, float sigmaD, float sigmaR) {
+
+		BaseImage<vec3uc> res(img.getDimensions());
+		res.setInvalidValue(img.getInvalidValue());
+
+		const int kernelRadius = (int)ceil(2.0*sigmaD);
+		for (unsigned int y = 0; y < img.getHeight(); y++) {
+			for (unsigned int x = 0; x < img.getWidth(); x++) {
+
+				res.setInvalid(x, y);
+
+				vec3f sum = vec3f(0.0f);
+				float sumWeight = 0.0f;
+
+				if (img.isValid(x, y)) {
+					const vec3uc& center = img(x, y);
+
+					for (int m = x - kernelRadius; m <= (int)x + kernelRadius; m++) {
+						for (int n = y - kernelRadius; n <= (int)y + kernelRadius; n++) {
+							if (m >= 0 && n >= 0 && m < (int)img.getWidth() && n < (int)img.getHeight()) {
+								if (img.isValid(m, n)) {
+									const vec3uc& current = img(m, n);
+									const float weight = gaussD(sigmaD, m - x, n - y)*gaussR(sigmaR, current - center);
+									sumWeight += weight;
+									sum += weight*vec3f(current);
+								}
+							}
+						}
+					}
+					if (sumWeight > 0.0f) res(x, y) = math::round(sum / sumWeight);
+				}
+			}
+		}
+		img = res;
+	}
+	static void bilateralFilter(DepthImage32& d, float sigmaD, float sigmaR) {
+
+		DepthImage32 res(d.getWidth(), d.getHeight());
+		res.setInvalidValue(d.getInvalidValue());
+
+		const int kernelRadius = (int)ceil(2.0*sigmaD);
+		for (unsigned int y = 0; y < d.getHeight(); y++) {
+			for (unsigned int x = 0; x < d.getWidth(); x++) {
+				res.setInvalid(x, y);
+
+				float sum = 0.0f;
+				float sumWeight = 0.0f;
+
+				if (d.isValid(x, y)) {
+					const float center = d(x, y);
+
+					for (int m = x - kernelRadius; m <= (int)x + kernelRadius; m++) {
+						for (int n = y - kernelRadius; n <= (int)y + kernelRadius; n++) {
+							if (m >= 0 && n >= 0 && m < (int)d.getWidth() && n < (int)d.getHeight()) {
+								if (d.isValid(m, n)) {
+									const float current = d(m, n);
+									const float weight = gaussD(sigmaD, m - x, n - y)*gaussR(sigmaR, current - center);
+									sumWeight += weight;
+									sum += weight*current;
+								}
+							}
+						}
+					}
+					if (sumWeight > 0.0f) res(x, y) = sum / sumWeight;
+				}
+			}
+		}
+		d = res;
+	}
+
 	// draw functions
 	template<typename T>
 	static void drawCircle(ml::BaseImage<T>& image, const ml::vec2f& center, float radius, const T& color) {

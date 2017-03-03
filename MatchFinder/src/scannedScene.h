@@ -9,6 +9,10 @@
 
 class ScannedScene {
 public:
+	enum NORMAL_TYPE {
+		DEPTH_NORMALS,
+		MESH_NORMALS
+	};
 	ScannedScene(const std::string& path, const std::string& name) {
 		load(path, name);
 	}
@@ -45,6 +49,8 @@ public:
 
 	//matches all previously found key points between all images and loaded sens files
 	void matchKeyPoints();
+
+	void computeNormals(NORMAL_TYPE type);
 
 	void saveMatches(const std::string& filename, const std::vector<KeyPointMatch>& matches, bool torch = true) const {
 		std::ofstream outFile(filename);
@@ -88,42 +94,11 @@ public:
 	}
 
 	void saveImages(const std::string& outPath) const;
+	void saveNormalImages(const std::string& outPath) const;
 
 private:
-	//static vec3f computeCameraSpacePosition(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
-	//{
-	//	MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
-
-	//	float depth = depthImage(x, y);
-	//	if (depth != -std::numeric_limits<float>::infinity()) {
-	//		const vec3f res = intrinsicsInv*vec3f(x*depth, y*depth, depth);
-	//		return res;
-	//	}
-	//	return vec3f(-std::numeric_limits<float>::infinity());
-	//}
-	//static vec3f computeNormal(const mat4f& intrinsicsInv, const DepthImage32& depthImage, unsigned int x, unsigned int y)
-	//{
-	//	MLIB_ASSERT(x < depthImage.getWidth() && y < depthImage.getHeight());
-
-	//	vec3f normal = vec3f(-std::numeric_limits<float>::infinity());
-
-	//	if (x > 0 && x + 1 < depthImage.getWidth() && y > 0 && y + 1 < depthImage.getHeight()) {
-	//		const vec3f CC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 0); //d_input[(y + 0)*width + (x + 0)];
-	//		const vec3f PC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y + 1); //d_input[(y + 1)*width + (x + 0)];
-	//		const vec3f CP = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 1, y + 0); //d_input[(y + 0)*width + (x + 1)];
-	//		const vec3f MC = computeCameraSpacePosition(intrinsicsInv, depthImage, x + 0, y - 1); //d_input[(y - 1)*width + (x + 0)];
-	//		const vec3f CM = computeCameraSpacePosition(intrinsicsInv, depthImage, x - 1, y + 0); //d_input[(y + 0)*width + (x - 1)];
-
-	//		if (CC.x != -std::numeric_limits<float>::infinity() && PC.x != -std::numeric_limits<float>::infinity() &&
-	//			CP.x != -std::numeric_limits<float>::infinity() && MC.x != -std::numeric_limits<float>::infinity() &&
-	//			CM.x != -std::numeric_limits<float>::infinity()) {
-	//			const vec3f n = (PC - MC) ^ (CP - CM);
-	//			const float l = n.length();
-	//			if (l > 0.0f) normal = n / -l; //d_output[y*width + x] = make_float4(n / -l, 1.0f);
-	//		}
-	//	}
-	//	return normal;
-	//}
+	void computeDepthNormals();
+	void computeMeshNormals();
 
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
@@ -132,4 +107,7 @@ private:
 	std::vector<KeyPointMatch>	m_keyPointMatches;
 
 	std::vector<KeyPointMatch>	m_keyPointNegatives;
+
+	//normals
+	std::vector<std::vector<PointImage>>	m_normals;
 };

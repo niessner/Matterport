@@ -89,6 +89,7 @@
     <ClInclude Include="src\keyPoint.h" />
     <ClInclude Include="src\matchVisualization.h" />
     <ClInclude Include="src\mLibInclude.h" />
+    <ClInclude Include="src\normals.h" />
     <ClInclude Include="src\scannedScene.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\targetver.h" />
@@ -100,6 +101,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\normals.cpp" />
     <ClCompile Include="src\scannedScene.cpp" />
     <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -19,7 +19,7 @@ s_maxNumImages = 0;
 
 //output dimensions
 s_outWidth = 640;
-s_outHeight = 480;
+s_outHeight = 512;
 
 s_depthFilterSigmaD = 2.0f;
 s_depthFilterSigmaR = 0.1f;
