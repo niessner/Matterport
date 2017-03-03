@@ -20,7 +20,9 @@
 	X(unsigned int, s_outWidth) \
 	X(unsigned int, s_outHeight) \
 	X(float, s_depthFilterSigmaD) \
-	X(float, s_depthFilterSigmaR)
+	X(float, s_depthFilterSigmaR) \
+	X(float, s_renderDepthMin) \
+	X(float, s_renderDepthMax)
 
 
 #ifndef VAR_NAME

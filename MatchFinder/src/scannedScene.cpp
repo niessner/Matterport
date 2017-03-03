@@ -7,7 +7,7 @@
 #include "globalAppState.h"
 
 #include "mLibFLANN.h"
-
+#include "omp.h"
 
 
 void ScannedScene::findKeyPoints()
@@ -315,22 +315,34 @@ void ScannedScene::computeDepthNormals()
 	std::cout << "computing depth normals... ";
 	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
 	m_normals.resize(maxNumSensors);
+	NormalExtractor extractor(GAS::get().s_outWidth, GAS::get().s_outHeight);
 	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
-		NormalExtractor::computeDepthNormals(m_sds[sensorIdx], GAS::get().s_depthFilterSigmaD, GAS::get().s_depthFilterSigmaR, GAS::get().s_outWidth, GAS::get().s_outHeight, m_normals[sensorIdx]);
+		extractor.computeDepthNormals(m_sds[sensorIdx], GAS::get().s_depthFilterSigmaD, GAS::get().s_depthFilterSigmaR, m_normals[sensorIdx]);
 	}
 	std::cout << "done!" << std::endl;
 }
 
 void ScannedScene::computeMeshNormals()
 {
-	throw MLIB_EXCEPTION("unimplemented");
-	//std::cout << "computing mesh normals... ";
-	//const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
-	//m_normals.resize(maxNumSensors);
-	//for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
-	//	NormalExtractor::computeDepthNormals(m_sds[sensorIdx], mesh, GAS::get().s_outWidth, GAS::get().s_outHeight, m_normals[sensorIdx]);
-	//}
-	//std::cout << "done!" << std::endl;
+	std::cout << "computing mesh normals... ";
+	//load mesh
+	const std::string meshFile = m_path + "/" + m_name + "_vh_clean.ply"; //highest-res
+	TriMeshf mesh = TriMeshf(MeshIOf::loadFromFile(meshFile));
+	mesh.computeNormals();
+	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	m_normals.resize(maxNumSensors);
+	std::vector<NormalExtractor*> extractors(omp_get_max_threads());
+	for (unsigned int i = 0; i < extractors.size(); i++) extractors[i] = new NormalExtractor(GAS::get().s_outWidth, GAS::get().s_outHeight);
+#pragma omp parallel for
+	for (int sensorIdx = 0; sensorIdx < (int)maxNumSensors; sensorIdx++) {
+		const int thread = omp_get_thread_num();
+		NormalExtractor& extractor = *extractors[thread];
+		extractor.computeMeshNormals(m_sds[sensorIdx], mesh, GAS::get().s_renderDepthMin, GAS::get().s_renderDepthMax, m_normals[sensorIdx]);
+	}
+
+	for (unsigned int i = 0; i < extractors.size(); i++)
+		SAFE_DELETE(extractors[i]);
+	std::cout << "done!" << std::endl;
 }
 
 void ScannedScene::saveNormalImages(const std::string& outPath) const

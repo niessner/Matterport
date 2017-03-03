@@ -36,10 +36,12 @@ int main(int argc, char* argv[])
 
 			ScannedScene ss(path, s);		
 
+
+			ss.computeNormals(ScannedScene::MESH_NORMALS);
+			ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");
+
 			ss.computeNormals(ScannedScene::DEPTH_NORMALS);
 			ss.saveNormalImages(outPath + "/" + s + "/normals_depth/");
-			//ss.computeNormals(ScannedScene::MESH_NORMALS);
-			//ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");
 			 
 			ss.findKeyPoints();
 			ss.matchKeyPoints();

@@ -23,3 +23,6 @@ s_outHeight = 512;
 
 s_depthFilterSigmaD = 2.0f;
 s_depthFilterSigmaR = 0.1f;
+
+s_renderDepthMin = 0.4f;
+s_renderDepthMax = 7.0f;

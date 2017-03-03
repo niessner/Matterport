@@ -25,6 +25,7 @@ public:
 	void load(const std::string& path, const std::string& name) {
 
 		m_name = name;
+		m_path = path;
 
 		Directory dir(path);
 		auto& files = dir.getFilesWithSuffix(".sens");
@@ -102,6 +103,7 @@ private:
 
 	std::vector<SensorData*> m_sds;
 	std::string m_name;
+	std::string m_path;
 
 	std::vector<KeyPoint>		m_keyPoints;
 	std::vector<KeyPointMatch>	m_keyPointMatches;
