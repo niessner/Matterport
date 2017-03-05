@@ -83,10 +83,10 @@ print(cutorch.getMemoryUsage(1))
 -- load training and testing files
 local train_files = {}
 if opt.train_data ~= '' and paths.filep(paths.concat(basePath,opt.train_data)) then
-    train_files = getDataFiles(paths.concat(basePath,opt.train_data))
+    train_files = getDataFiles(paths.concat(basePath,opt.train_data), basePath)
     print(train_files)
 end
-local test_files = getDataFiles(paths.concat(basePath,opt.test_data))
+local test_files = getDataFiles(paths.concat(basePath,opt.test_data), basePath)
 print(test_files)
 
 function test(data_files, outpath)

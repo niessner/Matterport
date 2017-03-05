@@ -62,8 +62,8 @@ parameters, gradParameters = model:getParameters()
 -- load training and testing files
 train_files = getDataFiles(paths.concat(basePath,opt.train_data), basePath) --filter out non-existent scenes
 test_files = getDataFiles(paths.concat(basePath,opt.test_data), basePath)   --filter out non-existent scenes
-print(train_files)
-print(test_files)
+print('#train files = ' .. #train_files)
+print('#test files = ' .. #test_files)
 
 
 -- config for SGD solver
@@ -151,9 +151,9 @@ function train()
 	    -- 	inputs[3] = inputs[3]:cat(neg,1)
 	    --end
 			
-	    inputs[1][{k,{},{},{}}]:copy(anc)
-	    inputs[2][{k,{},{},{}}]:copy(pos)
-	    inputs[3][{k,{},{},{}}]:copy(neg)
+	    inputs[1][{k,{},{},{}}]:copy(pos) --match
+	    inputs[2][{k,{},{},{}}]:copy(anc) --anchor
+	    inputs[3][{k,{},{},{}}]:copy(neg) --non-match
 	end
 	--cutorch.synchronize()
 	--print('batchBuild time:', torch.toc(t) * 1000.0 .. ' ms')

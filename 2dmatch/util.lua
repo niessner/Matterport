@@ -123,7 +123,11 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     local anchorPixelLoc = torch.floor(kp_anc[4])
     local matchPixelLoc = torch.floor(kp_pos[4])
     local nonMatchPixelLoc = torch.floor(kp_neg[4])
-
+--[[
+    print(str_anc .. '\t' .. anchorPixelLoc[1] .. ',' .. anchorPixelLoc[2])
+    print(str_pos .. '\t' .. matchPixelLoc[1] .. ',' .. matchPixelLoc[2])
+    print(str_neg .. '\t' .. nonMatchPixelLoc[1] .. ',' .. nonMatchPixelLoc[2])
+--]]
     -- Extract 64x64 patches
     local matchPatch = image.crop(matchImg,matchPixelLoc[1]-patchSize/2,matchPixelLoc[2]-patchSize/2,matchPixelLoc[1]+patchSize/2,matchPixelLoc[2]+patchSize/2)
     local anchorPatch = image.crop(anchorImg,anchorPixelLoc[1]-patchSize/2,anchorPixelLoc[2]-patchSize/2,anchorPixelLoc[1]+patchSize/2,anchorPixelLoc[2]+patchSize/2)
