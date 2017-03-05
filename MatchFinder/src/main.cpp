@@ -32,9 +32,16 @@ int main(int argc, char* argv[])
 			if (s == "archive") continue;
 			  
 			std::cout << "Loading Scene: " << s << std::endl;
-			const std::string path = srcPath + "/" + s;
-			 
-			ScannedScene ss(path, s);			
+			const std::string path = srcPath + "/" + s; 
+
+			ScannedScene ss(path, s);		
+
+
+			ss.computeNormals(ScannedScene::MESH_NORMALS);
+			ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");
+
+			ss.computeNormals(ScannedScene::DEPTH_NORMALS);
+			ss.saveNormalImages(outPath + "/" + s + "/normals_depth/");
 			 
 			ss.findKeyPoints();
 			ss.matchKeyPoints();

@@ -2,116 +2,19 @@
 #include "stdafx.h"
 
 #include "scannedScene.h"
+#include "imageHelper.h"
+#include "normals.h"
 #include "globalAppState.h"
 
 #include "mLibFLANN.h"
+#include "omp.h"
 
-
-inline float gaussR(float sigma, float dist)
-{
-	return exp(-(dist*dist) / (2.0f*sigma*sigma));
-}
-inline float gaussR(float sigma, const vec3f& d)
-{
-	float dist = d.length();
-	return exp(-(dist*dist) / (2.0f*sigma*sigma));
-}
-inline float gaussR(float sigma, const vec3uc& d)
-{
-	vec3f _d(d);	//_d /= 255.0f;
-	float dist = _d.length();
-	return exp(-(dist*dist) / (2.0f*sigma*sigma));
-}
-
-
-inline float linearR(float sigma, float dist)
-{
-	return std::max(1.0f, std::min(0.0f, 1.0f - (dist*dist) / (2.0f*sigma*sigma)));
-}
-
-inline float gaussD(float sigma, int x, int y)
-{
-	return exp(-((x*x + y*y) / (2.0f*sigma*sigma)));
-}
-
-inline float gaussD(float sigma, int x)
-{
-	return exp(-((x*x) / (2.0f*sigma*sigma)));
-}
-
-void bilateralFilter(BaseImage<vec3uc>& img, float sigmaD, float sigmaR) {
-
-	BaseImage<vec3uc> res(img.getDimensions());
-	res.setInvalidValue(img.getInvalidValue());
-
-	const int kernelRadius = (int)ceil(2.0*sigmaD);
-	for (unsigned int y = 0; y < img.getHeight(); y++) {
-		for (unsigned int x = 0; x < img.getWidth(); x++) {
-
-			res.setInvalid(x, y);
-
-			vec3f sum = vec3f(0.0f);
-			float sumWeight = 0.0f;
-
-			if (img.isValid(x, y)) {
-				const vec3uc& center = img(x, y);
-
-				for (int m = x - kernelRadius; m <= (int)x + kernelRadius; m++) {
-					for (int n = y - kernelRadius; n <= (int)y + kernelRadius; n++) {
-						if (m >= 0 && n >= 0 && m < (int)img.getWidth() && n < (int)img.getHeight()) {
-							if (img.isValid(m, n)) {
-								const vec3uc& current = img(m, n);
-								const float weight = gaussD(sigmaD, m - x, n - y)*gaussR(sigmaR, current - center);
-								sumWeight += weight;
-								sum += weight*vec3f(current);
-							}
-						}
-					}
-				}
-				if (sumWeight > 0.0f) res(x, y) = math::round(sum / sumWeight);
-			}
-		}
-	}
-	img = res;
-}
-void bilateralFilter(DepthImage32& d, float sigmaD, float sigmaR) {
-
-	DepthImage32 res(d.getWidth(), d.getHeight());
-	res.setInvalidValue(d.getInvalidValue());
-
-	const int kernelRadius = (int)ceil(2.0*sigmaD);
-	for (unsigned int y = 0; y < d.getHeight(); y++) {
-		for (unsigned int x = 0; x < d.getWidth(); x++) {
-			res.setInvalid(x, y);
-
-			float sum = 0.0f;
-			float sumWeight = 0.0f;
-
-			if (d.isValid(x, y)) {
-				const float center = d(x, y);
-
-				for (int m = x - kernelRadius; m <= (int)x + kernelRadius; m++) {
-					for (int n = y - kernelRadius; n <= (int)y + kernelRadius; n++) {
-						if (m >= 0 && n >= 0 && m < (int)d.getWidth() && n < (int)d.getHeight()) {
-							if (d.isValid(m, n)) {
-								const float current = d(m, n);
-								const float weight = gaussD(sigmaD, m - x, n - y)*gaussR(sigmaR, current - center);
-								sumWeight += weight;
-								sum += weight*current;
-							}
-						}
-					}
-				}
-				if (sumWeight > 0.0f) res(x, y) = sum / sumWeight;
-			}
-		}
-	}
-	d = res;
-}
 
 void ScannedScene::findKeyPoints()
 {
 	m_keyPoints.clear();
+	const float depthSigmaD = GAS::get().s_depthFilterSigmaD;
+	const float depthSigmaR = GAS::get().s_depthFilterSigmaR;
 
 	for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
@@ -120,13 +23,9 @@ void ScannedScene::findKeyPoints()
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			DepthImage32 d = sd->computeDepthImage(imageIdx);
-			DepthImage32 dfilt = d; bilateralFilter(dfilt, 2.0f, 0.1f);
+			DepthImage32 dfilt = d; ImageHelper::bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
+			PointImage normalImage = SensorData::computeNormals(intrinsicInv, dfilt);
 			//{ //debugging
-			//	ColorImageR32G32B32 normalImage(dfilt.getWidth(), dfilt.getHeight());
-			//	for (const auto& p : dfilt) {
-			//		vec3f n = computeNormal(intrinsicInv, dfilt, p.x, p.y);
-			//		normalImage(p.x, p.y) = n;
-			//	}
 			//	ColorImageR32G32B32 visNormalImage = normalImage;
 			//	for (auto& p : visNormalImage) p.value = (p.value + 1.0f) / 0.5f; //scale [-1,1] to [0,1]
 			//	FreeImageWrapper::saveImage("_depth.png", ColorImageR32G32B32(dfilt));
@@ -134,11 +33,12 @@ void ScannedScene::findKeyPoints()
 			//	const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
 			//	PointCloudf pc, pcw;
 			//	for (const auto& p : d) {
-			//		const vec3f n = normalImage(p.x, p.y);
+			//		const vec3f& n = normalImage(p.x, p.y);
 			//		if (n.x != -std::numeric_limits<float>::infinity()) {
-			//			pc.m_points.push_back(intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value));
+			//			const vec3f c = intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value);
+			//			pc.m_points.push_back(c);
 			//			pc.m_normals.push_back(n);
-			//			pcw.m_points.push_back(camToWorld * (intrinsicInv*vec3f(p.x*p.value, p.y*p.value, p.value)));
+			//			pcw.m_points.push_back(camToWorld * c);
 			//			pcw.m_normals.push_back((camToWorld.getRotation() * n).getNormalized());
 			//		}
 			//	}
@@ -153,7 +53,7 @@ void ScannedScene::findKeyPoints()
 			//sigmaD = 10.0f;
 			//sigmaR = 10.0f;
 			//FreeImageWrapper::saveImage("_before.png", c);
-			//bilateralFilter(c, sigmaD, sigmaR);
+			//ImageHelper::bilateralFilter(c, sigmaD, sigmaR);
 			//FreeImageWrapper::saveImage("_after.png", c);
 			//std::cout << "here" << std::endl;
 			//getchar();
@@ -186,7 +86,7 @@ void ScannedScene::findKeyPoints()
 					const vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
 
-					const vec3f normal = computeNormal(intrinsicInv, dfilt, loc.x, loc.y); 
+					const vec3f normal = normalImage(loc); 
 					if (normal.x == -std::numeric_limits<float>::infinity()) continue;
 					kp.m_worldNormal = (camToWorld.getRotation() * normal).getNormalized();
 
@@ -362,4 +262,116 @@ void ScannedScene::matchKeyPoints()
 
 
 	std::cout << "Total matches found: " << m_keyPointMatches.size() << std::endl;
+}
+
+void ScannedScene::saveImages(const std::string& outPath) const
+{
+	if (!util::directoryExists(outPath)) {
+		util::makeDirectory(outPath);
+	}
+
+	const bool bSaveNormals = !m_normals.empty();
+
+	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
+		SensorData* sd = m_sds[sensorIdx];
+
+		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
+			//DepthImage32 d = sd->computeDepthImage(imageIdx);
+			//TODO depth image?
+
+			char s[256];
+			sprintf(s, "color-%02d-%06d.jpg", (UINT)sensorIdx, (UINT)imageIdx);
+			const std::string outFileColor = outPath + "/" + std::string(s);
+
+			std::cout << "\r" << outFileColor;
+			FreeImageWrapper::saveImage(outFileColor, c);
+
+			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
+		}
+		std::cout << std::endl;
+	}
+}
+
+void ScannedScene::computeNormals(NORMAL_TYPE type)
+{
+	switch (type) 
+	{
+	case DEPTH_NORMALS:
+		computeDepthNormals();
+		break;
+	case MESH_NORMALS:
+		computeMeshNormals();
+		break;
+	default:
+		//should never come here
+		break;
+	}
+}
+
+void ScannedScene::computeDepthNormals()
+{
+	std::cout << "computing depth normals... ";
+	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	m_normals.resize(maxNumSensors);
+	NormalExtractor extractor(GAS::get().s_outWidth, GAS::get().s_outHeight);
+	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
+		extractor.computeDepthNormals(m_sds[sensorIdx], GAS::get().s_depthFilterSigmaD, GAS::get().s_depthFilterSigmaR, m_normals[sensorIdx]);
+	}
+	std::cout << "done!" << std::endl;
+}
+
+void ScannedScene::computeMeshNormals()
+{
+	std::cout << "computing mesh normals... ";
+	//load mesh
+	const std::string meshFile = m_path + "/" + m_name + "_vh_clean.ply"; //highest-res
+	TriMeshf mesh = TriMeshf(MeshIOf::loadFromFile(meshFile));
+	mesh.computeNormals();
+	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	m_normals.resize(maxNumSensors);
+	std::vector<NormalExtractor*> extractors(omp_get_max_threads());
+	for (unsigned int i = 0; i < extractors.size(); i++) extractors[i] = new NormalExtractor(GAS::get().s_outWidth, GAS::get().s_outHeight);
+#pragma omp parallel for
+	for (int sensorIdx = 0; sensorIdx < (int)maxNumSensors; sensorIdx++) {
+		const int thread = omp_get_thread_num();
+		NormalExtractor& extractor = *extractors[thread];
+		extractor.computeMeshNormals(m_sds[sensorIdx], mesh, GAS::get().s_renderDepthMin, GAS::get().s_renderDepthMax, m_normals[sensorIdx]);
+	}
+
+	for (unsigned int i = 0; i < extractors.size(); i++)
+		SAFE_DELETE(extractors[i]);
+	std::cout << "done!" << std::endl;
+}
+
+void ScannedScene::saveNormalImages(const std::string& outPath) const
+{
+	if (m_normals.empty()) {
+		std::cout << "no normals to save" << std::endl;
+		return;
+	}
+
+	if (!util::directoryExists(outPath)) {
+		util::makeDirectory(outPath);
+	}
+
+	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
+		SensorData* sd = m_sds[sensorIdx];
+		const mat4f depthIntrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
+
+		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+
+			char s[256];
+			sprintf(s, "normal-%02d-%06d.png", (UINT)sensorIdx, (UINT)imageIdx);
+			const std::string outFileNormal = outPath + "/" + std::string(s);
+
+			std::cout << "\r" << outFileNormal;
+			NormalExtractor::saveNormalImage(outFileNormal, m_normals[sensorIdx][imageIdx]);
+
+			if (GAS::get().s_maxNumImages > 0 && imageIdx + 1 >= GAS::get().s_maxNumImages) break;
+		}
+		std::cout << std::endl;
+	}
 }

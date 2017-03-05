@@ -23,6 +23,84 @@ std::vector<std::string> readScenes(const std::string& filename)
 
 void evaluate(const std::string& matterportPath, const std::string& patchFeatPath, const std::vector<std::string>& scenes, const std::string& logFile = "");
 
+void computeTrainStatistics(const std::string& basePath, const std::string& sceneFileList)
+{
+	const vec2ui imageBounds = vec2ui(640, 480);
+	//const vec2ui imageBounds = vec2ui(640, 512);
+
+	std::vector<std::string> scenes;
+	{
+		std::ifstream s(sceneFileList);
+		MLIB_ASSERT(s.is_open());
+		std::string line;
+		while (std::getline(s, line))
+			scenes.push_back(line);
+	}
+	std::vector<size_t> numMatchesPerScene; const unsigned int padding = 128 / 2; const unsigned int matchSkip = 4;
+	std::vector<std::vector<std::pair<vec2f, vec3f>>> keyposPos, keyposNeg; //<image pos, world pos> per scene
+	for (const auto& scene : scenes) {
+		const std::string matchesFile = basePath + scene + "/matches.txt";
+		const std::string negativFile = basePath + scene + "/negatives.txt";
+		if (util::fileExists(matchesFile)) {
+			keyposPos.push_back(std::vector<std::pair<vec2f, vec3f>>());
+			std::ifstream s(matchesFile); std::string line; size_t lineCount = 0;
+			while (std::getline(s, line)) {
+				if (lineCount >= 3 && ((lineCount - 3) % matchSkip == 0 || (lineCount - 3) % matchSkip == 1)) {
+					const auto parts = util::split(line, '\t');
+					const auto partsPixelPos = util::split(parts[3], ' ');
+					vec2f pixPos(util::convertTo<float>(partsPixelPos[0]), util::convertTo<float>(partsPixelPos[1]));
+					pixPos *= 0.5f;
+					const auto partsWorldPos = util::split(parts[5], ' ');
+					vec3f worldPos(util::convertTo<float>(partsWorldPos[0]), util::convertTo<float>(partsWorldPos[1]), util::convertTo<float>(partsWorldPos[2]));
+					keyposPos.back().push_back(std::make_pair(pixPos, worldPos));
+				}
+				lineCount++;
+			}
+		}
+		if (util::fileExists(negativFile)) {
+			keyposNeg.push_back(std::vector<std::pair<vec2f, vec3f>>());
+			std::ifstream s(negativFile); std::string line; size_t lineCount = 0;
+			while (std::getline(s, line)) {
+				if (lineCount >= 3 && ((lineCount - 3) % matchSkip == 0 || (lineCount - 3) % matchSkip == 1)) {
+					const auto parts = util::split(line, '\t');
+					const auto partsPixelPos = util::split(parts[3], ' ');
+					vec2f pixPos(util::convertTo<float>(partsPixelPos[0]), util::convertTo<float>(partsPixelPos[1]));
+					pixPos *= 0.5f;
+					const auto partsWorldPos = util::split(parts[5], ' ');
+					vec3f worldPos(util::convertTo<float>(partsWorldPos[0]), util::convertTo<float>(partsWorldPos[1]), util::convertTo<float>(partsWorldPos[2]));
+					keyposNeg.back().push_back(std::make_pair(pixPos, worldPos));
+				}
+				lineCount++;
+			}
+		}
+	}
+	for (unsigned int p = 0; p < keyposPos.size(); p++) {
+		const auto& keysPos = keyposPos[p];
+		const auto& keysNeg = keyposNeg[p];
+		size_t count = 0;
+		for (unsigned int i = 0; i < keysPos.size(); i += 2) {
+			const vec2f& pixPosA = keysPos[i].first;
+			const vec2f& pixPosB = keysPos[i + 1].first;
+			const vec2f& pixNegA = keysNeg[i].first;
+			const vec2f& pixNegB = keysNeg[i + 1].first;
+			if (pixPosA.x >= padding && pixPosA.y >= padding && pixPosA.x + padding <= imageBounds.x && pixPosA.y + padding <= imageBounds.y &&
+				pixPosB.x >= padding && pixPosB.y >= padding && pixPosB.x + padding <= imageBounds.x && pixPosB.y + padding <= imageBounds.y &&
+				pixNegA.x >= padding && pixNegA.y >= padding && pixNegA.x + padding <= imageBounds.x && pixNegA.y + padding <= imageBounds.y &&
+				pixNegB.x >= padding && pixNegB.y >= padding && pixNegB.x + padding <= imageBounds.x && pixNegB.y + padding <= imageBounds.y) {
+				count++; //#valid key matches per scene
+				//stats
+			}
+		}
+		numMatchesPerScene.push_back(count);
+	}
+	std::sort(numMatchesPerScene.begin(), numMatchesPerScene.end());
+	size_t total = std::accumulate(numMatchesPerScene.begin(), numMatchesPerScene.end(), 0);
+	float avg = (float)total / (float)numMatchesPerScene.size();
+	std::cout << numMatchesPerScene << std::endl;
+	std::cout << "total: " << total << std::endl;
+	std::cout << "avg: " << avg << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
 #if defined(DEBUG) | defined(_DEBUG)
@@ -33,8 +111,16 @@ int main(int argc, char* argv[])
 	std::srand(0);
 
 	try {
+		if (false) {
+			const std::string basePath = "//tirion/share/datasets/Matterport/Matching/";
+			const std::string sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_trainval.txt";
+			computeTrainStatistics(basePath, sceneFileList);
+			std::cout << "DONE" << std::endl;
+			getchar();
+		}
+
 		const std::string matterportPath = "//tirion/share/datasets/Matterport/Matching/";
-		const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output/output-1-28770/";
+		const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output/output-test-1-100948/";
 		const std::string trainTestPrefix = "scenes_";
 		const std::vector<std::string> phases = { "test" }; //the current one is train/test for same scene
 
@@ -62,7 +148,7 @@ int main(int argc, char* argv[])
 		MessageBoxA(NULL, "UNKNOWN EXCEPTION", "Exception caught", MB_ICONERROR);
 		exit(EXIT_FAILURE);
 	}
-	
+
 	std::cout << "<press key to continue>" << std::endl;
 	getchar();
 	return 0;
@@ -173,7 +259,7 @@ void evaluate(const std::string& matterportPath, const std::string& patchFeatPat
 {
 	//TODO: output stats per scenes?
 	//Note: currently ignores scenes
-	
+
 	const unsigned int numDescDistThresholds = 1000;
 	Timer t;
 

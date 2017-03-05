@@ -72,7 +72,7 @@ std::vector<KeyPoint> KeyPointFinder::findKeyPoints(const vec2ui& sensImIdxs, co
 
 	// sift detector
 	cv::SiftFeatureDetector detector;
-	detector.set("nFeatures", (int)maxNumKeyPoints);
+	detector.set("nFeatures", (int)maxNumKeyPoints); //TODO set first octave to 1 here?
 	std::vector<cv::KeyPoint> keypoints;
 	
 	detector.detect(im, keypoints);

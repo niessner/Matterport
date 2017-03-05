@@ -3,6 +3,7 @@
 
 #include "keyPoint.h"
 #include "matchVisualization.h"
+#include "omp.h"
 
 // TODO: reference additional headers your program requires here
 #include "opencv2/core/core.hpp"
@@ -36,11 +37,11 @@ void toItensityImageAsMat(const ColorImageR8G8B8& image, cv::Mat& im)
 
 
 void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G8B8>>& images, const std::vector<KeyPoint>& keyPoints,
-	const std::vector<KeyPointMatch>& keysToMatch, std::vector<float>& matchDists)
+	const std::vector<KeyPointMatch>& keysToMatch, std::vector<float>& matchDists, const std::string& featureType)
 {
-	//compute descriptors
-	cv::SiftDescriptorExtractor extractor;
-	//extract for each image
+	cv::initModule_nonfree(); //otherwise errors happen
+
+	//compute descriptors for each image's keypoints
 	std::unordered_map<vec2ui, std::vector<unsigned int>> keyIndicesPerSensImage;
 	for (unsigned int i = 0; i < keyPoints.size(); i++) {
 		const auto& k = keyPoints[i];
@@ -53,6 +54,14 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 			it->second.push_back(i);
 		}
 	}
+
+	cv::Ptr<cv::DescriptorExtractor> extractor = cv::DescriptorExtractor::create(featureType);
+	MLIB_ASSERT(extractor);
+	//if (featureType == "ORB") { extractor->set("edgeThreshold", 10); }
+	//(int nfeatures = 500, float scaleFactor = 1.2f, int nlevels = 8, int edgeThreshold = 31, int firstLevel = 0, int WTA_K = 2, int scoreType = ORB::HARRIS_SCORE, int patchSize = 31 )
+	//( int nfeatures=0, int nOctaveLayers=3,double contrastThreshold = 0.04, double edgeThreshold = 10, double sigma = 1.6);
+
+	//cv::SiftDescriptorExtractor extractor;
 	std::vector<cv::Mat> descriptors(keyPoints.size());
 	////debugging (only with 1 sensor)
 	//std::vector<cv::Mat> descPerImage(50);
@@ -66,14 +75,19 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 		std::vector<cv::KeyPoint> imKeypoints(im.second.size());
 		for (unsigned int i = 0; i < im.second.size(); i++) {
 			const unsigned int idx = im.second[i];
+			//int octave;
+			//if (featureType == "SIFT") octave = keyPoints[idx].m_opencvPackOctave;
+			//else if (featureType == "ORB") octave = keyPoints[idx].m_octave;
+			//else throw MLIB_EXCEPTION("error: invalid feature type for octave");
 			imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
-				keyPoints[idx].m_angle, 1.0f, keyPoints[idx].m_opencvPackOctave);
+				keyPoints[idx].m_angle);//, 1.0f, octave);
 		}
 		cv::Mat mat;
 		toItensityImageAsMat(images[im.first.x][im.first.y], mat);
+
 		//cv::imwrite("test.jpg", mat);
 		cv::Mat imDescriptors; //rows->#keys, cols->desc size (128)
-		extractor.compute(mat, imKeypoints, imDescriptors);
+		extractor->compute(mat, imKeypoints, imDescriptors);
 		if (imKeypoints.size() != im.second.size()) {
 			std::cout << "warning: unable to compute descriptors for all keypoints of image " << im.first.y << " (sens idx " << im.first.x << "), skipping" << std::endl;
 			continue;
@@ -102,12 +116,23 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 	////debug match 
 
 	matchDists.resize(keysToMatch.size());
-#pragma omp parallel for
+	//std::vector<cv::Ptr<cv::DescriptorMatcher>> matchers(omp_get_max_threads());
+	//for (auto& m : matchers) {
+	//	if (extractor->descriptorType() == CV_8U) m = cv::DescriptorMatcher::create("BruteForce-Hamming");
+	//	else if (extractor->descriptorType() == CV_32F) m = cv::DescriptorMatcher::create("FlannBased");
+	//	else throw MLIB_EXCEPTION("invalid descriptor type for descriptormatcher");
+	//}
+	//#pragma omp parallel for
+	cv::Ptr<cv::DescriptorMatcher> matcher;
+	if (extractor->descriptorType() == CV_8U) matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+	else if (extractor->descriptorType() == CV_32F) matcher = cv::DescriptorMatcher::create("FlannBased");
+	else throw MLIB_EXCEPTION("invalid descriptor type for descriptormatcher");
 	for (int i = 0; i < (int)keysToMatch.size(); i++) {
-		cv::FlannBasedMatcher matcher;
+		//cv::FlannBasedMatcher matcher;
+		//int thread = omp_get_thread_num();
 		std::vector<cv::DMatch> matches;
 		if (descriptors[keysToMatch[i].m_kp0].rows > 0 && descriptors[keysToMatch[i].m_kp1].rows > 0) {
-			matcher.match(descriptors[keysToMatch[i].m_kp0], descriptors[keysToMatch[i].m_kp1], matches);
+			matcher->match(descriptors[keysToMatch[i].m_kp0], descriptors[keysToMatch[i].m_kp1], matches);
 			matchDists[i] = matches.front().distance;
 
 			//MatchVisualization::visulizeMatches(images, std::vector<KeyPointMatch>(1, keysToMatch[i]), keyPoints, 10);
