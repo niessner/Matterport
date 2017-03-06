@@ -63,9 +63,14 @@ function loadMatchFiles(basePath, files, padding, skip)
         assert(#_pos == #_neg)
 
         for i = 1, #_pos do 
-            local scale = 2.0    --because our images are only half the size
+            --[[local scale = 2.0    --because our images are only half the size
             _pos[i][4] = strToVec2(_pos[i][4]) / scale
-            _neg[i][4] = strToVec2(_neg[i][4]) / scale
+            _neg[i][4] = strToVec2(_neg[i][4]) / scale--]] --TODO uncomment when this bug is fixed
+            _pos[i][4] = strToVec2(_pos[i][4])
+            _pos[i][4][1] = _pos[i][4][1] * 0.5; _pos[i][4][2] = _pos[i][4][2] * 0.46875
+            _neg[i][4] = strToVec2(_neg[i][4])
+            _neg[i][4][1] = _neg[i][4][1] * 0.5; _neg[i][4][2] = _neg[i][4][2] * 0.46875
+            --TODO get rid of this part after new data is generated
 
             assert(_pos[i][1] == _neg[i][1])    --make sure the match index is the same
         end
