@@ -30,18 +30,30 @@ int main(int argc, char* argv[])
 		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
 			const std::string& s = rootDir.getDirectories()[dirIdx];
 			if (s == "archive") continue;
+
+			if (util::directoryExists(outPath + "/" + s)) {
+				std::cout << (outPath + "/" + s) << " already exists, skippping" << std::endl;
+				continue;
+			}
 			  
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s; 
 
-			ScannedScene ss(path, s);		
+			//ScannedScene::debug();
+
+			ScannedScene ss(path, s);	
 
 
-			ss.computeNormals(ScannedScene::MESH_NORMALS);
-			ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");
+			//ss.computeNormals(ScannedScene::MESH_NORMALS);
+			//ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");
 
-			ss.computeNormals(ScannedScene::DEPTH_NORMALS);
-			ss.saveNormalImages(outPath + "/" + s + "/normals_depth/");
+			//if (!util::directoryExists(outPath + "/" + s + "/normals_depth/")) {
+			//	ss.computeNormals(ScannedScene::DEPTH_NORMALS);
+			//	ss.saveNormalImages(outPath + "/" + s + "/normals_depth/");
+			//}
+			//else {
+			//	std::cout << "found depth normals [" << s << "]" << std::endl;
+			//}
 			 
 			ss.findKeyPoints();
 			ss.matchKeyPoints();

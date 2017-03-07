@@ -19,7 +19,8 @@ void NormalExtractor::computeDepthNormals(const SensorData* sd, float depthSigma
 	}
 	const mat4f depthIntrinsicInv = intrinsic.getInverse();
 
-	for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+#pragma omp parallel for
+	for (int imageIdx = 0; imageIdx < (int)sd->m_frames.size(); imageIdx++) {
 		DepthImage32 d = sd->computeDepthImage(imageIdx);
 		//DepthImage32 dfilt = d; 
 		//ImageHelper::bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
@@ -32,38 +33,38 @@ void NormalExtractor::computeDepthNormals(const SensorData* sd, float depthSigma
 		ImageHelper::bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
 		normals[imageIdx] = SensorData::computeNormals(depthIntrinsicInv, dfilt);
 
-		//debugging
-		std::string file = "t.png";
-		saveNormalImage(file, normals[imageIdx]);
-		PointImage check;
-		NormalExtractor::loadNormalImage(file, check);
-		for (const auto& p : check) {
-			const auto& n = normals[imageIdx](p.x, p.y);
-			if (p.value.x == -std::numeric_limits<float>::infinity() && n.x != -std::numeric_limits<float>::infinity())
-				int  a = 5;
-			else if (p.value.x != -std::numeric_limits<float>::infinity() && n.x == -std::numeric_limits<float>::infinity())
-				int  a = 5;
-			else {
-				float d = vec3f::dist(p.value, n);
-				if (d > 0.0001f)
-					int a = 5;
-			}
-		}
-		PointImage campos = sd->computeCameraSpacePositions((unsigned int)imageIdx);
-		campos.resize(m_width, m_height);
-		{
-			PointCloudf pc;
-			for (const auto& p : campos) {
-				const vec3f& n = check(p.x, p.y);
-				if (p.value.x != -std::numeric_limits<float>::infinity() && n.x != -std::numeric_limits<float>::infinity()) {
-					pc.m_points.push_back(p.value);
-					pc.m_normals.push_back(n);
-				}
-			}
-			PointCloudIOf::saveToFile("t.ply", pc);
-		}
-		int a = 5;
-		//debugging
+		////debugging
+		//std::string file = "t.png";
+		//saveNormalImage(file, normals[imageIdx]);
+		//PointImage check;
+		//NormalExtractor::loadNormalImage(file, check);
+		//for (const auto& p : check) {
+		//	const auto& n = normals[imageIdx](p.x, p.y);
+		//	if (p.value.x == -std::numeric_limits<float>::infinity() && n.x != -std::numeric_limits<float>::infinity())
+		//		int  a = 5;
+		//	else if (p.value.x != -std::numeric_limits<float>::infinity() && n.x == -std::numeric_limits<float>::infinity())
+		//		int  a = 5;
+		//	else {
+		//		float d = vec3f::dist(p.value, n);
+		//		if (d > 0.0001f)
+		//			int a = 5;
+		//	}
+		//}
+		//PointImage campos = sd->computeCameraSpacePositions((unsigned int)imageIdx);
+		//campos.resize(m_width, m_height);
+		//{
+		//	PointCloudf pc;
+		//	for (const auto& p : campos) {
+		//		const vec3f& n = check(p.x, p.y);
+		//		if (p.value.x != -std::numeric_limits<float>::infinity() && n.x != -std::numeric_limits<float>::infinity()) {
+		//			pc.m_points.push_back(p.value);
+		//			pc.m_normals.push_back(n);
+		//		}
+		//	}
+		//	PointCloudIOf::saveToFile("t.ply", pc);
+		//}
+		//int a = 5;
+		////debugging
 	}
 }
 

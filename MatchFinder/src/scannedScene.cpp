@@ -64,7 +64,7 @@ void ScannedScene::findKeyPoints()
 			const float minResponse = GAS::get().s_responseThresh;
 			std::vector<KeyPoint> rawKeyPoints = KeyPointFinder::findKeyPoints(vec2ui(sensorIdx, imageIdx), c, maxNumKeyPoints, minResponse);
 
-			MeshDataf md;
+			//MeshDataf md;
 			size_t validKeyPoints = 0;
 			for (KeyPoint& rawkp : rawKeyPoints) {
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
@@ -94,7 +94,7 @@ void ScannedScene::findKeyPoints()
 
 					m_keyPoints.push_back(kp);
 
-					if (imageIdx == 0) md.merge(Shapesf::sphere(0.01f, vec3f(kp.m_worldPos), 10, 10, vec4f(1.0f, 0.0f, 0.0f, 1.0f)).computeMeshData());
+					//if (imageIdx == 0) md.merge(Shapesf::sphere(0.01f, vec3f(kp.m_worldPos), 10, 10, vec4f(1.0f, 0.0f, 0.0f, 1.0f)).computeMeshData());
 				}
 			}
 
@@ -106,6 +106,7 @@ void ScannedScene::findKeyPoints()
 		}
 	}
 	std::cout << std::endl;
+	std::cout << "total " << m_keyPoints.size() << " key points" << std::endl;
 }
 
 void ScannedScene::negativeKeyPoints()
@@ -345,6 +346,18 @@ void ScannedScene::computeMeshNormals()
 	std::cout << "done!" << std::endl;
 }
 
+template<>
+struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
+	size_t operator()(const vec2ui& v) const {
+		//TODO larger prime number (64 bit) to match size_t
+		const size_t p0 = 73856093;
+		const size_t p1 = 19349669;
+		//const size_t p2 = 83492791;
+		const size_t res = ((size_t)v.x * p0) ^ ((size_t)v.y * p1);// ^ ((size_t)v.z * p2);
+		return res;
+	}
+};
+
 void ScannedScene::saveNormalImages(const std::string& outPath) const
 {
 	if (m_normals.empty()) {
@@ -355,17 +368,40 @@ void ScannedScene::saveNormalImages(const std::string& outPath) const
 	if (!util::directoryExists(outPath)) {
 		util::makeDirectory(outPath);
 	}
+	const std::string rawSrcPath = GAS::get().s_srcPath + "/" + m_name + "/data/";
+	if (!util::directoryExists(rawSrcPath)) throw MLIB_EXCEPTION("raw src path (" + rawSrcPath + ") does not exist");
+	Directory dir(rawSrcPath);
+	std::vector<std::string> baseFiles = dir.getFilesWithSuffix("_d0_0.png");
+	for (auto& f : baseFiles) f = util::replace(f, "_d0_0.png", "");
 
-	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
+	std::unordered_map<vec2ui, std::string> nameMap;
+	{
+		std::vector<unsigned int> imageIdxs(3);
+		for (size_t fidx = 0; fidx < baseFiles.size(); fidx++) {
+			const std::string& f = baseFiles[fidx];
+			for (unsigned int camIdx = 0; camIdx < 3; camIdx++) {
+				for (unsigned int poseIdx = 0; poseIdx < 6; poseIdx++) {
+					nameMap[vec2ui(camIdx, imageIdxs[camIdx])] = f + "_n" + std::to_string(camIdx) + "_" + std::to_string(poseIdx);
+					MLIB_ASSERT(util::fileExists(rawSrcPath + f + "_d" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".png"));
+					imageIdxs[camIdx]++;
+				}
+			}
+		}
+	}
+
+	const unsigned int maxNumSensors = std::min(GAS::get().s_maxNumSensFiles, (unsigned int)m_sds.size());
 	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
 		const mat4f depthIntrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
 
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 
-			char s[256];
-			sprintf(s, "normal-%02d-%06d.png", (UINT)sensorIdx, (UINT)imageIdx);
-			const std::string outFileNormal = outPath + "/" + std::string(s);
+			//char s[256];
+			//sprintf(s, "normal-%02d-%06d.png", (UINT)sensorIdx, (UINT)imageIdx);
+			//const std::string outFileNormal = outPath + "/" + std::string(s);
+			const auto it = nameMap.find(vec2ui(sensorIdx, (unsigned int)imageIdx));
+			if (it == nameMap.end()) throw MLIB_EXCEPTION("no name for sens " + std::to_string(sensorIdx) + ", image " + std::to_string(imageIdx));
+			const std::string outFileNormal = outPath + "/" + it->second + ".png";
 
 			std::cout << "\r" << outFileNormal;
 			NormalExtractor::saveNormalImage(outFileNormal, m_normals[sensorIdx][imageIdx]);
@@ -374,4 +410,25 @@ void ScannedScene::saveNormalImages(const std::string& outPath) const
 		}
 		std::cout << std::endl;
 	}
+}
+
+void ScannedScene::debug()
+{
+	const std::string file = "W:/data/matterport/derived_data/17DRP5sb8fy/normals_depth/00ebbf3782c64d74aaf7dd39cd561175_n1_2.png";
+	PointImage normal;
+	NormalExtractor::loadNormalImage(file, normal);
+
+	ColorImageR8G8B8 color(normal.getDimensions());
+	for (unsigned int y = 0; y < normal.getHeight(); y++) {
+		for (unsigned int x = 0; x < normal.getWidth(); x++) {
+			vec3f n = normal(x, y);
+			if (n.x == -std::numeric_limits<float>::infinity()) color(x, y) = vec3uc(0, 0, 0);
+			else {
+				n = (n + 1.0f) * 0.5f * 255.0f;
+				color(x, y) = vec3uc(n);
+			}
+		}
+	}
+	FreeImageWrapper::saveImage("debug.png", color);
+	int a = 5;
 }

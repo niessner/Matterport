@@ -97,6 +97,8 @@ public:
 	void saveImages(const std::string& outPath) const;
 	void saveNormalImages(const std::string& outPath) const;
 
+	static void debug();
+
 private:
 	void computeDepthNormals();
 	void computeMeshNormals();
