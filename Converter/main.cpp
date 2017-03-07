@@ -232,6 +232,7 @@ int main(int argc, char* argv[])
 
 			try {
 				//convertToSens(outPath + "/data/", outPath + "/" + s + ".sens");
+				if (!util::directoryExists(outPath)) util::makeDirectory(outPath);
 				convertToSens(srcFolder + "/" + s, outPath + "/" + s + ".sens");
 			}
 			catch (const std::exception& e) {
