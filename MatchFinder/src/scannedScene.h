@@ -98,6 +98,7 @@ public:
 	void saveNormalImages(const std::string& outPath) const;
 
 	static void debug();
+	void debugMatch() const;
 
 private:
 	void computeDepthNormals();

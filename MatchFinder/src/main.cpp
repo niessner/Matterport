@@ -25,10 +25,15 @@ int main(int argc, char* argv[])
 		const std::string srcPath = GAS::get().s_srcPath;
 		const std::string outPath = GAS::get().s_outPath;
 		Directory rootDir(srcPath);
-		std::cout << "found " << rootDir.getDirectories().size() << " scenes " << std::endl;
+		const auto scenes = rootDir.getDirectories();
+		//const std::vector<std::string> scenes = { "PX4nDJXEHrG" };
+		//GAS::get().s_maxNumSensFiles = 1;
+		
+		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
-		for (size_t dirIdx = 0; dirIdx < rootDir.getDirectories().size(); dirIdx++) {
-			const std::string& s = rootDir.getDirectories()[dirIdx];
+		//for (size_t dirIdx = 0; dirIdx < 25; dirIdx++) {
+		for (size_t dirIdx = 0; dirIdx < scenes.size(); dirIdx++) {
+			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
 
 			if (util::directoryExists(outPath + "/" + s)) {
@@ -42,7 +47,7 @@ int main(int argc, char* argv[])
 			//ScannedScene::debug();
 
 			ScannedScene ss(path, s);	
-
+			//ss.debugMatch();
 
 			//ss.computeNormals(ScannedScene::MESH_NORMALS);
 			//ss.saveNormalImages(outPath + "/" + s + "/normals_mesh/");

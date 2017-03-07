@@ -76,6 +76,7 @@ std::vector<KeyPoint> KeyPointFinder::findKeyPoints(const vec2ui& sensImIdxs, co
 	std::vector<cv::KeyPoint> keypoints;
 	
 	detector.detect(im, keypoints);
+	res.reserve(keypoints.size());
 	
 	// remove keypoints with no corresponding depth, same keypoints
 	std::unordered_set<vec2ui, std::hash<vec2ui>> keyPointLocations;

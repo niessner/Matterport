@@ -109,6 +109,19 @@ public:
 		d = res;
 	}
 
+	static void erode(DepthImage32& depth, unsigned int numIter = 2) {
+		numIter = 2 * ((numIter + 1) / 2);
+		DepthImage32 tmp; tmp.setInvalidValue(depth.getInvalidValue()); 
+		for (unsigned int i = 0; i < numIter; i++) {
+			if (i % 2 == 0) {
+				erode(tmp, depth, 3, 0.05f, 0.3f);
+			}
+			else {
+				erode(depth, tmp, 3, 0.05f, 0.3f);
+			}
+		}
+	}
+
 	// draw functions
 	template<typename T>
 	static void drawCircle(ml::BaseImage<T>& image, const ml::vec2f& center, float radius, const T& color) {
@@ -177,6 +190,36 @@ private:
 				image(x, y) = color;
 				y += dir;
 				error--;
+			}
+		}
+	}
+
+	static void erode(DepthImage32& output, const DepthImage32& input, int structureSize, float dThresh, float fracReq)
+	{
+		output.allocate(input.getWidth(), input.getHeight());
+
+		for (unsigned int y = 0; y < input.getHeight(); y++) {
+			for (unsigned int x = 0; x < input.getWidth(); x++) {
+				unsigned int count = 0;
+				float oldDepth = input(x, y);
+				for (int i = -structureSize; i <= structureSize; i++) {
+					for (int j = -structureSize; j <= structureSize; j++) {
+						if (x + j >= 0 && x + j < input.getWidth() && y + i >= 0 && y + i < input.getHeight()) {
+							float depth = input(x + j, y + i);
+							if (depth == input.getInvalidValue() || depth == 0.0f || fabs(depth - oldDepth) > dThresh) {
+								count++;
+							}
+						}
+					}
+				}
+
+				unsigned int sum = (2 * structureSize + 1)*(2 * structureSize + 1);
+				if ((float)count / (float)sum >= fracReq) {
+					output(x, y) = input.getInvalidValue();
+				}
+				else {
+					output(x, y) = input(x, y);
+				}
 			}
 		}
 	}

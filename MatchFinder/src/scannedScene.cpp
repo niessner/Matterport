@@ -21,10 +21,14 @@ void ScannedScene::findKeyPoints()
 		const mat4f intrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
 
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+		//const std::vector<unsigned int> imageIndices = { 34, 1276 }; //debugging
+		//for (unsigned int imageIdx : imageIndices) { //debugging
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			DepthImage32 d = sd->computeDepthImage(imageIdx);
+			DepthImage32 dErode = d; ImageHelper::erode(dErode, 2);
 			DepthImage32 dfilt = d; ImageHelper::bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
 			PointImage normalImage = SensorData::computeNormals(intrinsicInv, dfilt);
+
 			//{ //debugging
 			//	ColorImageR32G32B32 visNormalImage = normalImage;
 			//	for (auto& p : visNormalImage) p.value = (p.value + 1.0f) / 0.5f; //scale [-1,1] to [0,1]
@@ -69,7 +73,7 @@ void ScannedScene::findKeyPoints()
 			for (KeyPoint& rawkp : rawKeyPoints) {
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
 				vec2ui loc = math::round(rawkp.m_pixelPos);
-				if (d.isValid(loc) && d.isValidCoordinate(loc + padding) && d.isValidCoordinate(loc - padding)) {
+				if (dErode.isValid(loc) && dErode.isValidCoordinate(loc + padding) && dErode.isValidCoordinate(loc - padding)) {
 					KeyPoint kp = rawkp;
 					kp.m_depth = d(loc);
 					kp.m_imageIdx = (unsigned int)imageIdx;
@@ -201,9 +205,10 @@ void ScannedScene::matchKeyPoints()
 				for (size_t j = 0; j < res.size(); j++) {
 					const KeyPoint& kp0 = m_keyPoints[keyPointIdx];
 					const KeyPoint& kp1 = m_keyPoints[res[j] + nn_offsets[sensorIdx_dst][frameIdx_dst]];
+
 					//check world normals
 					float angleDist = std::acos(kp0.m_worldNormal | kp1.m_worldNormal);
-					if (angleDist > 2.0f) continue; //ignore with world normals > ~115 degrees apart
+					if (angleDist > 1.75f) continue; //ignore with world normals > ~100 degrees apart
 					
 					////debugging
 					//const float degrees = math::radiansToDegrees(angleDist);
@@ -273,12 +278,15 @@ void ScannedScene::saveImages(const std::string& outPath) const
 
 	const bool bSaveNormals = !m_normals.empty();
 
+	const unsigned int outWidth = GAS::get().s_outWidth;
+	const unsigned int outHeight = GAS::get().s_outHeight;
 	const unsigned int maxNumSensors = std::min((unsigned int)m_sds.size(), GAS::get().s_maxNumSensFiles);
 	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
 
 		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
+			c.resize(outWidth, outHeight);
 			//DepthImage32 d = sd->computeDepthImage(imageIdx);
 			//TODO depth image?
 
@@ -431,4 +439,48 @@ void ScannedScene::debug()
 	}
 	FreeImageWrapper::saveImage("debug.png", color);
 	int a = 5;
+}
+
+void ScannedScene::debugMatch() const
+{
+	//const vec2ui im0(0, 34);
+	//const vec2ui im1(0, 1276);
+	//const vec2ui loc0(84, 642);
+	//const vec2ui loc1(800, 848);
+
+	const vec2ui im0(0, 4);
+	const vec2ui im1(2, 696);
+	const vec2ui loc0(737, 912);
+	const vec2ui loc1(281, 888);
+
+	DepthImage32 d0 = m_sds[im0.x]->computeDepthImage(im0.y);
+	DepthImage32 d1 = m_sds[im1.x]->computeDepthImage(im1.y);
+	KeyPoint kp0;
+	kp0.m_sensorIdx = im0.x; kp0.m_imageIdx = im0.y;
+	kp0.m_pixelPos = vec2f(loc0); kp0.m_depth = d0(loc0);
+	kp0.m_worldPos = m_sds[im0.x]->m_frames[im0.y].getCameraToWorld() * (m_sds[im0.x]->m_calibrationDepth.m_intrinsic.getInverse() *vec3f(kp0.m_pixelPos.x*kp0.m_depth, kp0.m_pixelPos.y*kp0.m_depth, kp0.m_depth));
+	KeyPoint kp1;
+	kp1.m_sensorIdx = im1.x; kp1.m_imageIdx = im1.y;
+	kp1.m_pixelPos = vec2f(loc1); kp1.m_depth = d1(loc1);
+	kp1.m_worldPos = m_sds[im1.x]->m_frames[im1.y].getCameraToWorld() * (m_sds[im1.x]->m_calibrationDepth.m_intrinsic.getInverse() *vec3f(kp1.m_pixelPos.x*kp1.m_depth, kp1.m_pixelPos.y*kp1.m_depth, kp1.m_depth));
+
+	//compute world normals
+	const float depthSigmaD = GAS::get().s_depthFilterSigmaD;
+	const float depthSigmaR = GAS::get().s_depthFilterSigmaR;
+	ImageHelper::bilateralFilter(d0, depthSigmaD, depthSigmaR);
+	ImageHelper::bilateralFilter(d1, depthSigmaD, depthSigmaR);
+	PointImage normal0 = SensorData::computeNormals(m_sds[im0.x]->m_calibrationDepth.m_intrinsic.getInverse(), d0);
+	PointImage normal1 = SensorData::computeNormals(m_sds[im1.x]->m_calibrationDepth.m_intrinsic.getInverse(), d1);
+	const vec3f camNormal0 = normal0(loc0);		const vec3f worldNormal0 = m_sds[im0.x]->m_frames[im0.y].getCameraToWorld().getRotation() * camNormal0;
+	const vec3f camNormal1 = normal1(loc1);		const vec3f worldNormal1 = m_sds[im1.x]->m_frames[im1.y].getCameraToWorld().getRotation() * camNormal1;
+	const float angleDist = std::acos(worldNormal0 | worldNormal1);
+
+	KeyPointMatch m;
+	m.m_kp0 = kp0;
+	m.m_kp1 = kp1;
+	MatchVisualization mv;
+	mv.visulizeMatches(m_sds, std::vector<KeyPointMatch>(1, m), 10, 1, true);
+	mv.visulizeMatches3D(m_sds, std::vector<KeyPointMatch>(1, m), 10);
+
+	std::cout << "waiting..." << std::endl; getchar();
 }
