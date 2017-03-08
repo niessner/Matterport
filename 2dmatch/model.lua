@@ -6,9 +6,14 @@ require 'cudnn'
 function getModel()
 
     -- Load ResNet-101 pre-trained on ImageNet
-    local resnetModel = torch.load('resnet-101.t7')
+    --[[local resnetModel = torch.load('resnet-101.t7')
     resnetModel:remove(11) -- Remove last FC layer
     resnetModel:insert(nn.Linear(2048,128)) -- Reduce descriptor vector size
+    resnetModel:insert(nn.Normalize(2)) -- Normalize descriptor vector
+    resnetModel:training()--]]
+    local resnetModel = torch.load('resnet-50.t7')
+    resnetModel:remove(11) -- Remove last FC layer
+    resnetModel:insert(nn.Linear(2048,512)) -- Reduce descriptor vector size
     resnetModel:insert(nn.Normalize(2)) -- Normalize descriptor vector
     resnetModel:training()
 
@@ -31,11 +36,8 @@ function getModel()
     -- Build complete model
     local model = nn.Sequential():add(tripletModel):add(distanceModel)
 
-    -- Set model to GPU
-    model = model:cuda()
-
     -- Defines triplet loss from "Deep Metric Learning using Triplet Network" http://arxiv.org/abs/1412.6622
-    local criterion = nn.DistanceRatioCriterion(true):cuda()
+    local criterion = nn.DistanceRatioCriterion(true)
 
     return model,criterion
 end

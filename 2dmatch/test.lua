@@ -71,7 +71,7 @@ do
     print('mem4: ')
     print(cutorch.getMemoryUsage(1))
 end
-collectgarbage()
+--collectgarbage()
 
 patchEncoder:cuda()
 --print(patchEncoder)
@@ -96,8 +96,10 @@ function test(data_files, outpath)
     
     --load in the data (positive and negative matches) 
     local poss, negs = loadMatchFiles(basePath, data_files, patchSize/2, opt.matchFileSkip)
-    
-    local inputs = {}
+    local count = 0
+    local err = 0
+    local avgPosDist = 0
+    local avgNegDist = 0
     
     -- output files
     splitter = ',' --output as csv
@@ -116,9 +118,9 @@ function test(data_files, outpath)
         local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[k][2], poss[k][3], negs[k][3], patchSize)
         
         -- Compute features per patch
-        local ancFeat = torch.squeeze(patchEncoder:forward(anc:resize(1,3,224,224):cuda()):clone())
-        local posFeat = torch.squeeze(patchEncoder:forward(pos:resize(1,3,224,224):cuda()):clone())
-        local negFeat = torch.squeeze(patchEncoder:forward(neg:resize(1,3,224,224):cuda()):clone())
+        local ancFeat = torch.squeeze(patchEncoder:forward(anc:resize(1,3,224,224):cuda()):float())
+        local posFeat = torch.squeeze(patchEncoder:forward(pos:resize(1,3,224,224):cuda()):float())
+        local negFeat = torch.squeeze(patchEncoder:forward(neg:resize(1,3,224,224):cuda()):float())
         --print(ancFeat:size())
         assert(ancFeat:size(1) == posFeat:size(1) and ancFeat:size(1) == negFeat:size(1))
 
@@ -126,6 +128,14 @@ function test(data_files, outpath)
         --print('Distance between matching patches: ' ..       ancFeat:dist(posFeat))
         --print('Distance between non-matching patches 1: ' .. posFeat:dist(negFeat))
         --print('Distance between non-matching patches 2: ' .. ancFeat:dist(negFeat))
+        --io.read()
+        local distAncPos = ancFeat:dist(posFeat)
+        local distAncNeg = ancFeat:dist(negFeat)
+        local loss = -torch.log( torch.exp(-distAncPos) / (torch.exp(-distAncPos) + torch.exp(-distAncNeg)) )
+        err = err + loss
+        avgPosDist = avgPosDist + distAncPos
+        avgNegDist = avgNegDist + distAncNeg
+        if distAncPos < distAncNeg then count = count + 1 end
         
         -- log to file
         for i=1,ancFeat:size(1) do
@@ -142,6 +152,11 @@ function test(data_files, outpath)
         outfile_pos:write('\n')
         outfile_neg:write('\n')
     end
+    print('count = ' .. count .. ' of ' .. #poss)
+	print(count/#poss)
+    print('loss = ' .. err .. ' / ' .. #poss .. ' = ' .. err/#poss)
+    print('avg pos dist = ' .. avgPosDist .. ' / ' .. #poss .. ' = ' .. avgPosDist/#poss)
+    print('avg neg dist = ' .. avgNegDist .. ' / ' .. #poss .. ' = ' .. avgNegDist/#poss)
 end
 
 -- Test!
