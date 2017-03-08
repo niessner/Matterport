@@ -135,7 +135,7 @@ function train()
             if x ~= parameters then parameters:copy(x) end
             gradParameters:zero()
             -- Forward and backward pass
-            local inputs = {inputs_anc, inputs_pos, inputs_neg}
+            local inputs = {inputs_pos, inputs_anc, inputs_neg}
             local output = model:forward(inputs)
             local loss = criterion:forward(output)
             --print('Training iteration '..trainIter..': '..loss)
