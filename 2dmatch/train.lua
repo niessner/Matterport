@@ -94,14 +94,6 @@ function train()
     print(#poss)
     --print(poss)
     --print(negs)
-
-    --local tic = torch.tic()
- 
-    local filesize = #poss
-    local indices = torch.randperm(filesize):long():split(opt.batchSize)
-    -- remove last mini-batch so that all the batches have equal size
-    indices[#indices] = nil
-    --print(indices)
     collectgarbage()
 
     --pre-allocate memory
@@ -113,20 +105,21 @@ function train()
     local indices = torch.randperm(#poss)
     local numIters = math.floor(#poss/opt.batchSize)
 
-    for trainIter = 1,numIters do
+    for iter = 1,#poss,opt.batchSize do
         -- print progress bar :D		
+        local trainIter = (iter-1)/opt.batchSize+1
         xlua.progress(trainIter, numIters)
 
-        for k = 1,opt.batchSize do --create a mini batch
+        for k = iter,iter+opt.batchSize-1 do --create a mini batch
             local idx = indices[k]
             local sceneName = poss[idx][1]
             local imgPath = paths.concat(opt.basePath,sceneName,'images')
 			
             local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[idx][2], poss[idx][3], negs[idx][3], patchSize)
-			
-            inputs_anc[{k,{},{},{}}]:copy(pos) --match
-            inputs_pos[{k,{},{},{}}]:copy(anc) --anchor
-            inputs_neg[{k,{},{},{}}]:copy(neg) --non-match
+			--pos = torch.add(anc, torch.rand(3, 224, 224):float() * 0.1)
+            inputs_anc[{k-iter+1,{},{},{}}]:copy(pos) --match
+            inputs_pos[{k-iter+1,{},{},{}}]:copy(anc) --anchor
+            inputs_neg[{k-iter+1,{},{},{}}]:copy(neg) --non-match
         end
 
         -- a function that takes single input and return f(x) and df/dx
@@ -139,10 +132,10 @@ function train()
             local output = model:forward(inputs)
             local loss = criterion:forward(output)
             --print('Training iteration '..trainIter..': '..loss)
-            curLoss = loss
-            totalloss = totalloss + loss
             local dLoss = criterion:backward(output)
             model:backward(inputs,dLoss)
+            curLoss = loss
+            totalloss = totalloss + loss
             return loss,gradParameters
         end
 
