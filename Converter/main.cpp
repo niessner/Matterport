@@ -45,7 +45,15 @@ template <typename T> BaseImage<T> undistort(const BaseImage<T>& src, const mat4
 
 void convertToSens(const std::string& srcPath, const std::string& outFile) 
 {
-	Directory dir(srcPath);
+	const std::string srcColorPath = srcPath + "/matterport_color_images";
+	const std::string srcDepthPath = srcPath + "/matterport_depth_images";
+	const std::string srcPosePath = srcPath + "/matterport_camera_poses";
+	const std::string srcCalibPath = srcPath + "/matterport_camera_intrinsics";
+	if (!util::directoryExists(srcColorPath) || !util::directoryExists(srcDepthPath) || 
+		!util::directoryExists(srcPosePath) || !util::directoryExists(srcCalibPath))
+		throw MLIB_EXCEPTION("raw color/depth/pose/calib dir(s) do not exist [" + srcPath + "]");
+
+	Directory dir(srcDepthPath);
 	std::vector<std::string> baseFiles = dir.getFilesWithSuffix("_d0_0.png");
 	for (auto& f : baseFiles) f = util::replace(f, "_d0_0.png", "");
 
@@ -56,10 +64,10 @@ void convertToSens(const std::string& srcPath, const std::string& outFile)
 		const std::string& f = baseFiles[fidx];		
 		for (unsigned int camIdx = 0; camIdx < numCams; camIdx++) {
 			for (unsigned int poseIdx = 0; poseIdx < 6; poseIdx++) {
-				const std::string depthFile = srcPath + "/" + f + "_d" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".png";
-				const std::string colorFile = srcPath + "/" + f + "_i" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".jpg";
-				const std::string poseFile = srcPath + "/" + f + "_pose_" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".txt";
-				const std::string intrFile = srcPath + "/" + f + "_intrinsics_" + std::to_string(camIdx) + ".txt";
+				const std::string depthFile = srcDepthPath + "/" + f + "_d" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".png";
+				const std::string colorFile = srcColorPath + "/" + f + "_i" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".jpg";
+				const std::string poseFile = srcPosePath + "/" + f + "_pose_" + std::to_string(camIdx) + "_" + std::to_string(poseIdx) + ".txt";
+				const std::string intrFile = srcCalibPath + "/" + f + "_intrinsics_" + std::to_string(camIdx) + ".txt";
 
 				DepthImage16 depthImage16;
 				FreeImageWrapper::loadImage(depthFile, depthImage16);
@@ -154,7 +162,7 @@ int main(int argc, char* argv[])
 	try {
 
 		//single debug
-		if (true) {
+		if (false) {
 			//const std::string s = "D7N2EKCX4Sj";
 			//const std::string path = "W:/data/matterport/v1_converted/" + s;
 			
@@ -170,10 +178,11 @@ int main(int argc, char* argv[])
 
 
 
-		const std::string srcFolder = "W:/data/matterport/v1";
+		//const std::string srcFolder = "W:/data/matterport/v1";
+		const std::string srcFolder = "//falas/Matterport/v1";
 		const std::string dstFolder = "W:/data/matterport/v1_converted";
 
-		util::makeDirectory(dstFolder);
+		if (!util::directoryExists(dstFolder)) util::makeDirectory(dstFolder);
 
 		Directory srcDir(srcFolder);
 
@@ -192,7 +201,7 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (true) {
+			if (false) { //data in src is already unzipped
 				util::deleteDirectory(outPath);
 				util::makeDirectory(outPath);
 				if (true) {
@@ -222,7 +231,9 @@ int main(int argc, char* argv[])
 			}
 
 			try {
-				convertToSens(outPath + "/data/", outPath + "/" + s + ".sens");
+				//convertToSens(outPath + "/data/", outPath + "/" + s + ".sens");
+				if (!util::directoryExists(outPath)) util::makeDirectory(outPath);
+				convertToSens(srcFolder + "/" + s, outPath + "/" + s + ".sens");
 			}
 			catch (const std::exception& e) {
 				std::cout << "exception caught during conversion: " << e.what() << std::endl;
