@@ -2,6 +2,7 @@ require 'cutorch';
 require 'cunn';
 require 'cudnn'
 require 'image'
+require 'model'
 dofile('util.lua')
 -- require 'qtwidget'
 
@@ -35,6 +36,7 @@ end
 -- Set RNG seed
 --math.randomseed(os.time())
 math.randomseed(0)
+torch.manualSeed(0)
 
 if (paths.dirp(opt.output_dir)) then
     print(sys.COLORS.red .. 'warning: output dir ' .. opt.output_dir .. ' already exists, press key to continue' .. sys.COLORS.none)
@@ -49,9 +51,8 @@ print(cutorch.getMemoryUsage(1))
 
 -- Load training snapshot model
 local patchSize = opt.patchSize
-assert(paths.filep(opt.model))
 local patchEncoder
-do 
+if paths.filep(opt.model) then
     print('loading model: ' .. opt.model .. '...')
     local model = torch.load(opt.model)
     print('mem2: ')
@@ -70,6 +71,9 @@ do
     
     print('mem4: ')
     print(cutorch.getMemoryUsage(1))
+else
+    local model, criterion = getModel()
+    patchEncoder = model:get(1):get(1):clone()
 end
 --collectgarbage()
 
@@ -78,7 +82,11 @@ patchEncoder:cuda()
 
 print('mem5: ')
 print(cutorch.getMemoryUsage(1))
-
+--[[
+print('loading model: ' .. opt.model .. '...')
+local model = torch.load(opt.model)
+local patchEncoder = model:get(1):get(1):clone()
+--]]
 
 -- load training and testing files
 local train_files = {}
