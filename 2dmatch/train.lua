@@ -119,8 +119,8 @@ function train()
             local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[idx][2], poss[idx][3], negs[idx][3], patchSize)
 	    --pos = torch.add(anc, torch.rand(3, 224, 224):float() * 0.1)
             --neg = torch.rand(3, 224, 224):float()
-            inputs_anc[{k-iter+1,{},{},{}}]:copy(pos) --match
-            inputs_pos[{k-iter+1,{},{},{}}]:copy(anc) --anchor
+            inputs_pos[{k-iter+1,{},{},{}}]:copy(pos) --match
+            inputs_anc[{k-iter+1,{},{},{}}]:copy(anc) --anchor
             inputs_neg[{k-iter+1,{},{},{}}]:copy(neg) --non-match
         end
 
@@ -154,7 +154,8 @@ function train()
         if trainIter > 0 and (trainIter % saveInterval == 0 or trainIter == #indices) then
             local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(trainIter) .. '.net')
             print('==> saving model to '..filename)
-            torch.save(filename, model)--:clearState())
+            --torch.save(filename, model)
+            torch.save(filename, model:clearState())
         end	   
     end
 	
