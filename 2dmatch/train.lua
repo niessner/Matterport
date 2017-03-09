@@ -109,14 +109,16 @@ function train()
         -- print progress bar :D		
         local trainIter = (iter-1)/opt.batchSize+1
         xlua.progress(trainIter, numIters)
-
+        if iter + opt.batchSize > #poss then break end --don't use last batch 
+        collectgarbage()
         for k = iter,iter+opt.batchSize-1 do --create a mini batch
             local idx = indices[k]
             local sceneName = poss[idx][1]
             local imgPath = paths.concat(opt.basePath,sceneName,'images')
 			
             local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[idx][2], poss[idx][3], negs[idx][3], patchSize)
-			--pos = torch.add(anc, torch.rand(3, 224, 224):float() * 0.1)
+	    --pos = torch.add(anc, torch.rand(3, 224, 224):float() * 0.1)
+            --neg = torch.rand(3, 224, 224):float()
             inputs_anc[{k-iter+1,{},{},{}}]:copy(pos) --match
             inputs_pos[{k-iter+1,{},{},{}}]:copy(anc) --anchor
             inputs_neg[{k-iter+1,{},{},{}}]:copy(neg) --non-match
@@ -152,7 +154,7 @@ function train()
         if trainIter > 0 and (trainIter % saveInterval == 0 or trainIter == #indices) then
             local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(trainIter) .. '.net')
             print('==> saving model to '..filename)
-            torch.save(filename, model:clearState())
+            torch.save(filename, model)--:clearState())
         end	   
     end
 	
