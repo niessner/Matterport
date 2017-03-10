@@ -63,20 +63,20 @@ function loadMatchFiles(basePath, files, padding, skip)
         assert(#_pos == #_neg)
 
         for i = 1, #_pos do 
-            --[[local scale = 2.0    --because our images are only half the size
+            local scale = 2.0    --because our images are only half the size
             _pos[i][4] = strToVec2(_pos[i][4]) / scale
-            _neg[i][4] = strToVec2(_neg[i][4]) / scale--]] --TODO uncomment when this bug is fixed
-            _pos[i][4] = strToVec2(_pos[i][4])
+            _neg[i][4] = strToVec2(_neg[i][4]) / scale
+            --[[_pos[i][4] = strToVec2(_pos[i][4])
             _pos[i][4][1] = _pos[i][4][1] * 0.5; _pos[i][4][2] = _pos[i][4][2] * 0.46875
             _neg[i][4] = strToVec2(_neg[i][4])
             _neg[i][4][1] = _neg[i][4][1] * 0.5; _neg[i][4][2] = _neg[i][4][2] * 0.46875
-            --TODO get rid of this part after new data is generated
+            --]]
 
             assert(_pos[i][1] == _neg[i][1])    --make sure the match index is the same
         end
 
 
-        local bounds = torch.Tensor{640, 480}
+        local bounds = torch.Tensor{640, 512}--480}
         for i = 1, #_pos, 2 do
             assert(_pos[i+0][1] == _pos[i+1][1])    --make sure the match index is the same
             assert(_neg[i+0][1] == _neg[i+1][1])    --make sure the match index is the same
@@ -105,6 +105,14 @@ function loadMatchFiles(basePath, files, padding, skip)
     return poss, negs
 end
 
+function markImage(img, locx, locy)
+    local res = img:clone()
+    res[1][locy][locx] = 1
+    res[2][locy][locx] = 0
+    res[3][locy][locx] = 0
+    return res
+end
+
 -- Includes: matching tote image and product image, and non-matching tote image
 function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     
@@ -118,16 +126,16 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     local nonMatchImg = image.load(paths.concat(path,str_neg),3,'float')
     --print('image load time:' , torch.toc(t) * 1000.0 .. ' ms')
 
-    --[[ --debugging
-    image.save('orig_anchor.jpg', anchorImg)
-    image.save('orig_match.jpg', matchImg)
-    image.save('orig_nonmatch.jpg', nonMatchImg)
-    --debugging --]]
-    
     -- Pixel locations of patch centers (x,y)
     local anchorPixelLoc = torch.floor(kp_anc[4])
     local matchPixelLoc = torch.floor(kp_pos[4])
     local nonMatchPixelLoc = torch.floor(kp_neg[4])
+
+    --[[--debugging
+    image.save('orig_anchor.png', markImage(anchorImg, anchorPixelLoc[1], anchorPixelLoc[2]))
+    image.save('orig_match.png', markImage(matchImg, matchPixelLoc[1], matchPixelLoc[2]))
+    image.save('orig_nonmatch.png', markImage(nonMatchImg, nonMatchPixelLoc[1], nonMatchPixelLoc[2]))
+    --debugging--]]
 --[[
     print(str_anc .. '\t' .. anchorPixelLoc[1] .. ',' .. anchorPixelLoc[2])
     print(str_pos .. '\t' .. matchPixelLoc[1] .. ',' .. matchPixelLoc[2])
@@ -138,10 +146,10 @@ function getTrainingExampleTriplet(path, kp_anc, kp_pos, kp_neg, patchSize)
     local anchorPatch = image.crop(anchorImg,anchorPixelLoc[1]-patchSize/2,anchorPixelLoc[2]-patchSize/2,anchorPixelLoc[1]+patchSize/2,anchorPixelLoc[2]+patchSize/2)
     local nonMatchPatch = image.crop(nonMatchImg,nonMatchPixelLoc[1]-patchSize/2,nonMatchPixelLoc[2]-patchSize/2,nonMatchPixelLoc[1]+patchSize/2,nonMatchPixelLoc[2]+patchSize/2)
 
-    --[[ --debugging
-    image.save('patch_anchor.jpg', anchorPatch)
-    image.save('patch_match.jpg', matchPatch)
-    image.save('patch_nonmatch.jpg', nonMatchPatch)
+    --[[--debugging
+    image.save('patch_anchor.png', markImage(anchorPatch, patchSize/2+1, patchSize/2+1))
+    image.save('patch_match.png', markImage(matchPatch, patchSize/2+1, patchSize/2+1))
+    image.save('patch_nonmatch.png', markImage(nonMatchPatch, patchSize/2+1, patchSize/2+1))
     --debugging --]]
     
     -- Preprocess image patches

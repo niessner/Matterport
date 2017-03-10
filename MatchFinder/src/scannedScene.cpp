@@ -376,7 +376,8 @@ void ScannedScene::saveNormalImages(const std::string& outPath) const
 	if (!util::directoryExists(outPath)) {
 		util::makeDirectory(outPath);
 	}
-	const std::string rawSrcPath = GAS::get().s_srcPath + "/" + m_name + "/data/";
+	std::string rawSrcPath = GAS::get().s_srcPath + "/" + m_name + "/data/";
+	if (!util::directoryExists(rawSrcPath)) rawSrcPath = "//falas/Matterport/v1/" + m_name + "/matterport_depth_images/";
 	if (!util::directoryExists(rawSrcPath)) throw MLIB_EXCEPTION("raw src path (" + rawSrcPath + ") does not exist");
 	Directory dir(rawSrcPath);
 	std::vector<std::string> baseFiles = dir.getFilesWithSuffix("_d0_0.png");

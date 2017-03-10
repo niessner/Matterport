@@ -10,19 +10,13 @@ require 'sys'
 -- require 'qtwidget' -- for visualizing images
 dofile('util.lua')
 
-local basePath = '/mnt/raid/datasets/Matterport/Matching/'
-
 opt_string = [[
     -h,--help                                       print help
     -s,--save               (default "logs")        subdirectory to save logs
     -b,--batchSize          (default 8)             batch size
-    -r,--learningRate       (default 0.01)          learning rate
-    --learningRateDecay     (default 1e-7)          learning rate decay
-    --weigthDecay           (default 0.0005)        weight decay
-    -m,--momentum           (default 0.9)           mementum
-    --epoch_step            (default 20)            epoch step
     -g,--gpu_index          (default 0)             GPU index (start from 0)
-    --max_epoch             (default 200)	        maximum number of epochs
+    --max_epoch             (default 10)	        maximum number of epochs
+    --basePath              (default "/mnt/raid/datasets/Matterport/Matching1/")        base path for train/test data
     --train_data            (default "scenes_trainval.txt")     txt file containing train
     --test_data             (default "scenes_test.txt")      txt file containing test
     --patchSize             (default 64)            patch size to extract (resized to 224)
@@ -47,10 +41,13 @@ cutorch.setDevice(opt.gpu_index+1)
 -- Set RNG seed
 --math.randomseed(os.time())
 math.randomseed(0)
+torch.manualSeed(0)
 
 
 -- Load model and criterion
 model,criterion = getModel()
+model = model:cuda()
+critrerion = criterion:cuda()
 model:zeroGradParameters()
 parameters, gradParameters = model:getParameters()
 --print(model)
@@ -60,19 +57,11 @@ parameters, gradParameters = model:getParameters()
 
 
 -- load training and testing files
-train_files = getDataFiles(paths.concat(basePath,opt.train_data), basePath) --filter out non-existent scenes
-test_files = getDataFiles(paths.concat(basePath,opt.test_data), basePath)   --filter out non-existent scenes
+train_files = getDataFiles(paths.concat(opt.basePath,opt.train_data), opt.basePath) --filter out non-existent scenes
+test_files = getDataFiles(paths.concat(opt.basePath,opt.test_data), opt.basePath)   --filter out non-existent scenes
 print('#train files = ' .. #train_files)
 print('#test files = ' .. #test_files)
 
-
--- config for SGD solver
-optimState = {
-    learningRate = opt.learningRate,
-    weightDecay = opt.weigthDecay,
-    momentum = opt.momentum,
-    learningRateDecay = opt.learningRateDecay,
-}
 
 -- config logging
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
@@ -89,7 +78,7 @@ do
 end
 
 local patchSize = opt.patchSize
-local saveInterval = 5000
+local saveInterval = 1000
 
 ------------------------------------
 -- Training routine
@@ -98,118 +87,76 @@ function train()
     model:training()
     epoch = epoch or 1 -- if epoch not defined, assign it as 1
     print('epoch ' .. epoch)
-    if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
+    --if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
     --load in the train data (positive and negative matches) 
-    local poss, negs = loadMatchFiles(basePath, train_files, patchSize/2, opt.matchFileSkip)
+    local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip)
     print(#poss)
     --print(poss)
     --print(negs)
-
-    --local tic = torch.tic()
- 
-    local filesize = #poss
-    local indices = torch.randperm(filesize):long():split(opt.batchSize)
-    -- remove last mini-batch so that all the batches have equal size
-    indices[#indices] = nil
-    --print(indices)
     collectgarbage()
 
-    local inputs = {}	--pre-allocate memory
-    inputs[1] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
-    inputs[2] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
-    inputs[3] = torch.FloatTensor(opt.batchSize, 3, 224, 224)
+    --pre-allocate memory
+    local inputs_anc = torch.zeros(opt.batchSize, 3, 224, 224):cuda()
+    local inputs_pos = torch.zeros(opt.batchSize, 3, 224, 224):cuda()
+    local inputs_neg = torch.zeros(opt.batchSize, 3, 224, 224):cuda()
 
     local totalloss = 0	
-    for t, v in ipairs(indices) do 
-	-- print progress bar :D		
-	xlua.progress(t, #indices)
-	--local inputs = {}
-	cutorch.synchronize()
+    local indices = torch.randperm(#poss)
+    local numIters = math.floor(#poss/opt.batchSize)
 
-	for k = 1, v:size(1) do --create a mini batch
-            local sceneName = poss[v[k]][1]
-	    local imgPath = paths.concat(basePath,sceneName,'images')
+    for iter = 1,#poss,opt.batchSize do
+        -- print progress bar :D		
+        local trainIter = (iter-1)/opt.batchSize+1
+        xlua.progress(trainIter, numIters)
+        if iter + opt.batchSize > #poss then break end --don't use last batch 
+        collectgarbage()
+        for k = iter,iter+opt.batchSize-1 do --create a mini batch
+            local idx = indices[k]
+            local sceneName = poss[idx][1]
+            local imgPath = paths.concat(opt.basePath,sceneName,'images')
 			
-	    local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[v[k]][2], poss[v[k]][3], negs[v[k]][3], patchSize)
-			
-	    --anc = torch.ones(3, 224, 224)
-	    --pos = torch.ones(3, 224, 224)
- 	    --neg = torch.ones(3, 224, 224)	
-
-	    --anc = anc:reshape(1,3,224,224)
-	    --pos = pos:reshape(1,3,224,224)
-	    --neg = neg:reshape(1,3,224,224)
-
-	    --print(anc:size())
-			
-	    --if k == 1 then
-	    --	inputs = {anc,pos,neg}
-	    --else
-	    --	inputs[1] = inputs[1]:cat(anc,1)
-	    -- 	inputs[2] = inputs[2]:cat(pos,1)
-	    -- 	inputs[3] = inputs[3]:cat(neg,1)
-	    --end
-			
-	    inputs[1][{k,{},{},{}}]:copy(pos) --match
-	    inputs[2][{k,{},{},{}}]:copy(anc) --anchor
-	    inputs[3][{k,{},{},{}}]:copy(neg) --non-match
-	end
-	--cutorch.synchronize()
-	--print('batchBuild time:', torch.toc(t) * 1000.0 .. ' ms')
-
-	--print('stat1: ')
-	--print(cutorch.getMemoryUsage(1))
-
-	--cutorch.synchronize()	
-	--t = torch.tic()
-
-    	-- Convert input to GPU memory
-	inputs[1] = inputs[1]:cuda()
-	inputs[2] = inputs[2]:cuda()
-	inputs[3] = inputs[3]:cuda()
-
-	--cutorch.synchronize()
-	--print('cudacopy time:', torch.toc(t) * 1000.0 .. ' ms')
-
-	-- a function that takes single input and return f(x) and df/dx
-	local curLoss = -1
-	local feval = function(x)
-	    if x ~= parameters then parameters:copy(x) end
-            gradParameters:zero()
-	    -- Forward and backward pass
-	    local output = model:forward(inputs)
-	    local loss = criterion:forward(output)
-	    --print('Training iteration '..trainIter..': '..loss)
-	    curLoss = loss
-	    totalloss = totalloss + loss
-	    local dLoss = criterion:backward(output)
-	    model:backward(inputs,dLoss)
-	    return loss,gradParameters
+            local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[idx][2], poss[idx][3], negs[idx][3], patchSize)
+	    --pos = torch.add(anc, torch.rand(3, 224, 224):float() * 0.1)
+            --neg = torch.rand(3, 224, 224):float()
+            inputs_pos[{k-iter+1,{},{},{}}]:copy(pos) --match
+            inputs_anc[{k-iter+1,{},{},{}}]:copy(anc) --anchor
+            inputs_neg[{k-iter+1,{},{},{}}]:copy(neg) --non-match
         end
-            
-	--cutorch.synchronize();
-	--t = torch.tic()
 
-	-- use SGD optimizer: parameters as input to feval will be updated
-        optim.sgd(feval, parameters, optimState)
-    	
-	--cutorch.synchronize();
-	--print('sgd time:', torch.toc(t) * 1000.0 .. ' ms')
+        -- a function that takes single input and return f(x) and df/dx
+        local curLoss = -1
+        local feval = function(x)
+            if x ~= parameters then parameters:copy(x) end
+            gradParameters:zero()
+            -- Forward and backward pass
+            local inputs = {inputs_pos, inputs_anc, inputs_neg}
+            local output = model:forward(inputs)
+            local loss = criterion:forward(output)
+            --print('Training iteration '..trainIter..': '..loss)
+            local dLoss = criterion:backward(output)
+            model:backward(inputs,dLoss)
+            curLoss = loss
+            totalloss = totalloss + loss
+            return loss,gradParameters
+        end
 
-    	if testLogger then
+        config = {learningRate = 0.001,momentum = 0.99}
+        optim.sgd(feval, parameters, config)
+
+        if testLogger then
             paths.mkdir(opt.save)
-	    testLogger:add{tostring(epoch), tostring(t), curLoss, totalloss / t}
-       	    testLogger:style{'-','-','-','-'}
-	end
+            testLogger:add{tostring(epoch), tostring(trainIter), curLoss, totalloss / trainIter}
+            testLogger:style{'-','-','-','-'}
+        end
   
 
-	if t > 0 and (t % saveInterval == 0 or t == #indices) then
-	    local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(t) .. '.net')
-      	    print('==> saving model to '..filename)
-	    --model:clearState()
-      	    torch.save(filename, model)
-	end	   
+        if trainIter > 0 and (trainIter % saveInterval == 0 or trainIter == #indices) then
+            local filename = paths.concat(opt.save, 'model_' .. tostring(epoch) .. '-' .. tostring(trainIter) .. '.net')
+            print('==> saving model to '..filename)
+            --torch.save(filename, model)
+            torch.save(filename, model:clearState())
+        end	   
     end
 	
     epoch = epoch + 1
@@ -256,66 +203,3 @@ for i = 1,opt.max_epoch do
     --test()
 end
 
---[[
-for trainIter = 1,1000 do
-
-	-- Create a mini-batch of training examples
-	for i = 1,8 do 
-
-		-- Get training triplet of anchor patch, matching patch, and non-matching patch
-		local matchPatch,anchorPatch,nonMatchPath = getTrainingExampleTriplet()
-
-		-- Reshape data for input to network
-		matchPatch = matchPatch:reshape(1,3,224,224);
-		anchorPatch = anchorPatch:reshape(1,3,224,224);
-		nonMatchPath = nonMatchPath:reshape(1,3,224,224);
-		if i == 1 then
-			input = {matchPatch,anchorPatch,nonMatchPath}
-			-- mosaic = anchorPatch:reshape(3,224,224):cat(matchPatch:reshape(3,224,224),2):cat(nonMatchPath:reshape(3,224,224),2)
-		else
-			input[1] = input[1]:cat(matchPatch,1)
-			input[2] = input[2]:cat(anchorPatch,1)
-			input[3] = input[3]:cat(nonMatchPath,1)
-			-- mosaic = mosaic:cat(anchorPatch:reshape(3,224,224):cat(matchPatch:reshape(3,224,224),2):cat(nonMatchPath:reshape(3,224,224),2),3)
-		end
-	end
-
-	-- Convert input to GPU memory
-	input[1] = input[1]:cuda()
-	input[2] = input[2]:cuda()
-	input[3] = input[3]:cuda()
-
-	-- Visualize training examples (console command: qlua -lenv train.lua)
-	-- image.display{image=mosaic,offscreen=false,win=visWindow}
-
-	params,gradParams = model:getParameters()
-	local feval = function(x)
-
-	    -- Update model parameters
-	    if x ~= params then
-	        params:copy(x) 
-	    end
-
-	    -- Reset gradients
-	    gradParams:zero() 
-
-	    -- Forward and backward pass
-	    local output = model:forward(input)
-	    local loss = criterion:forward(output)
-	    print('Training iteration '..trainIter..': '..loss)
-	    local dLoss = criterion:backward(output)
-	    model:backward(input,dLoss)
-	    return loss,gradParams
-	end
-
-	-- Update model parameters (SGD)
-	optim.sgd(feval,params,optimState)
-
-	-- Save training snapshot of model
-	if trainIter%100 == 0 then
-		local filename = paths.concat("snapshots","snapshot_"..trainIter..".net")
-		os.execute('mkdir -p '..sys.dirname(filename))
-		torch.save(filename, model:clearState()) 
-	end
-end
---]]
