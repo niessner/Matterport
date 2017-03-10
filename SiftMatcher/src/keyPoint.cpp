@@ -56,7 +56,7 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 	}
 
 	cv::Ptr<cv::DescriptorExtractor> extractor = cv::DescriptorExtractor::create(featureType);
-	MLIB_ASSERT(extractor);
+	MLIB_ASSERT(extractor != NULL);
 	//if (featureType == "ORB") { extractor->set("edgeThreshold", 10); }
 	//(int nfeatures = 500, float scaleFactor = 1.2f, int nlevels = 8, int edgeThreshold = 31, int firstLevel = 0, int WTA_K = 2, int scoreType = ORB::HARRIS_SCORE, int patchSize = 31 )
 	//( int nfeatures=0, int nOctaveLayers=3,double contrastThreshold = 0.04, double edgeThreshold = 10, double sigma = 1.6);
@@ -76,25 +76,47 @@ void KeyPointMatcher::matchKeyPoints(const std::vector<std::vector<ColorImageR8G
 		for (unsigned int i = 0; i < im.second.size(); i++) {
 			const unsigned int idx = im.second[i];
 			//int octave;
-			//if (featureType == "SIFT") octave = keyPoints[idx].m_opencvPackOctave;
-			//else if (featureType == "ORB") octave = keyPoints[idx].m_octave;
-			//else throw MLIB_EXCEPTION("error: invalid feature type for octave");
-			imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
-				keyPoints[idx].m_angle);//, 1.0f, octave);
+			if (featureType == "SIFT")
+				imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
+				keyPoints[idx].m_angle, 1.0f, keyPoints[idx].m_opencvPackOctave);
+			else if (featureType == "ORB")
+				imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
+				keyPoints[idx].m_angle);
+			else if (featureType == "SURF")
+				imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
+				keyPoints[idx].m_angle, 1.0f, keyPoints[idx].m_octave);
+			////else throw MLIB_EXCEPTION("error: invalid feature type for octave");
+			//imKeypoints[i] = cv::KeyPoint(keyPoints[idx].m_pixelPos.x, keyPoints[idx].m_pixelPos.y, keyPoints[idx].m_size,
+			//	keyPoints[idx].m_angle);//, 1.0f, octave);
 		}
 		cv::Mat mat;
 		toItensityImageAsMat(images[im.first.x][im.first.y], mat);
+
+		const auto tmp = imKeypoints;
 
 		//cv::imwrite("test.jpg", mat);
 		cv::Mat imDescriptors; //rows->#keys, cols->desc size (128)
 		extractor->compute(mat, imKeypoints, imDescriptors);
 		if (imKeypoints.size() != im.second.size()) {
-			std::cout << "warning: unable to compute descriptors for all keypoints of image " << im.first.y << " (sens idx " << im.first.x << "), skipping" << std::endl;
-			continue;
+			std::cout << "warning: only computed " << imKeypoints.size() << " descriptors for " << im.second.size() << " keypoints of image " << im.first.y << " (sens idx " << im.first.x << ")" << std::endl;
+			if (imKeypoints.empty())
+				continue;
 		}
-		for (unsigned int i = 0; i < im.second.size(); i++) {
-			const unsigned int idx = im.second[i];
-			imDescriptors.row(i).copyTo(descriptors[idx]); //assign desc rows to global descriptors array
+		unsigned int ii = 0;
+		for (unsigned int i = 0; i < imKeypoints.size(); i++) {
+			unsigned int idx = im.second[ii];
+			while (!(imKeypoints[i].pt.x == keyPoints[idx].m_pixelPos.x && imKeypoints[i].pt.y == keyPoints[idx].m_pixelPos.y)) {
+				ii++;
+				if (ii == im.second.size()) {
+					throw MLIB_EXCEPTION("ERROR SFDLKJ");
+					break;
+				}
+				idx = im.second[ii];
+			}
+			if (ii < im.second.size()) {
+				imDescriptors.row(i).copyTo(descriptors[idx]); //assign desc rows to global descriptors array
+				ii++;
+			}
 
 			//imDescriptors.row(i).copyTo(descPerImage[im.first.y].row(i)); //debugging
 		}
