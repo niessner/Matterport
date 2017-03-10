@@ -1,11 +1,11 @@
 
 
-//s_featureType = "sift";
-//s_outputFile = "sift.csv"; 
+s_featureType = "sift";
+s_outputFile = "sift.csv"; 
 //s_featureType = "orb";
 //s_outputFile = "orb.csv";
-s_featureType = "surf";
-s_outputFile = "surf.csv";
+//s_featureType = "surf";
+//s_outputFile = "surf.csv";
 
 
 //s_srcPath = "W:/data/matterport/v1_converted";
@@ -23,6 +23,6 @@ s_maxNumImages = 0
 //s_dataPath = "../MatchFinder/ref-output/";
 //s_outputFile = "test.csv";
 
-////full set
-//s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
-//s_keyMatchSkip = 200;
+//full set
+s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
+s_keyMatchSkip = 300;

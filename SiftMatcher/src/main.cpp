@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 		}
 		////debugging
 		//scenes = std::vector<std::string> {"17DRP5sb8fy"};
+		//scenes.resize(2);
 		////debugging
 		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
@@ -59,17 +60,27 @@ int main(int argc, char* argv[])
 		//	util::deleteFile(statsLogFile);
 		//}
 
+		Timer t;
+		const bool bDumpTemp = scenes.size() > 1;
+		const std::string tmpDir = "tmp/";
+		if (util::directoryExists(tmpDir)) {
+			std::cout << "warning: tmp dir " << tmpDir << " already exists, press key to delete and continue" << std::endl;
+			getchar();
+			util::deleteDirectory(tmpDir);
+		}
 		for (size_t dirIdx = 0; dirIdx < scenes.size(); dirIdx++) {
 			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
-			  
-			std::cout << "Loading Scene images: " << s << std::endl;
+
 			const std::string path = dataPath + s;
+			const std::string filenamePos = path + "/matches.txt";
+			const std::string filenameNeg = path + "/negatives.txt";
+			if (!util::fileExists(filenamePos) || !util::fileExists(filenameNeg)) continue;
+
+			std::cout << "Loading Scene images: " << s << std::endl;
 			 
 			Images images(path, s);	
 
-			const std::string filenamePos = path + "/matches.txt";
-			const std::string filenameNeg = path + "/negatives.txt";
 			images.loadGTMatches(filenamePos, filenameNeg);
 
 			//debugging
@@ -77,9 +88,12 @@ int main(int argc, char* argv[])
 			//std::cout << "DONE" << std::endl;
 			//getchar();
 
-			images.matchKeyPoints(logFile);
+			images.matchKeyPoints(logFile, bDumpTemp, tmpDir);
 		}
-
+		if (bDumpTemp) { //aggregate
+			Images::computePrecisionRecall(logFile, tmpDir);
+		}
+		std::cout << "total time: " << t.getElapsedTime() << " seconds" << std::endl;
 	}
 	catch (const std::exception& e)
 	{
