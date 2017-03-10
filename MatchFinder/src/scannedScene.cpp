@@ -25,7 +25,7 @@ void ScannedScene::findKeyPoints()
 		//for (unsigned int imageIdx : imageIndices) { //debugging
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			DepthImage32 d = sd->computeDepthImage(imageIdx);
-			DepthImage32 dErode = d; ImageHelper::erode(dErode, 2);
+			DepthImage32 dErode = d; ImageHelper::erode(dErode, 4);
 			DepthImage32 dfilt = d; ImageHelper::bilateralFilter(dfilt, depthSigmaD, depthSigmaR);
 			PointImage normalImage = SensorData::computeNormals(intrinsicInv, dfilt);
 
@@ -443,15 +443,16 @@ void ScannedScene::debug()
 
 void ScannedScene::debugMatch() const
 {
-	//const vec2ui im0(0, 34);
-	//const vec2ui im1(0, 1276);
-	//const vec2ui loc0(84, 642);
-	//const vec2ui loc1(800, 848);
+	const vec2ui im0(2, 200);
+	const vec2ui im1(2, 221);
+	const vec2ui loc0(338, 666);
+	const vec2ui loc1(755, 531);
 
-	const vec2ui im0(0, 4);
-	const vec2ui im1(2, 696);
-	const vec2ui loc0(737, 912);
-	const vec2ui loc1(281, 888);
+	//12200
+	//const vec2ui im0(0, 124);
+	//const vec2ui im1(1, 507);
+	//const vec2ui loc0(188, 474);
+	//const vec2ui loc1(416, 470);
 
 	DepthImage32 d0 = m_sds[im0.x]->computeDepthImage(im0.y);
 	DepthImage32 d1 = m_sds[im1.x]->computeDepthImage(im1.y);
@@ -481,6 +482,12 @@ void ScannedScene::debugMatch() const
 	MatchVisualization mv;
 	mv.visulizeMatches(m_sds, std::vector<KeyPointMatch>(1, m), 10, 1, true);
 	mv.visulizeMatches3D(m_sds, std::vector<KeyPointMatch>(1, m), 10);
+
+	//DepthImage32 de = d1; ImageHelper::erode(de, 2);
+	//FreeImageWrapper::saveImage("_depth.png", ColorImageR32G32B32(d1));
+	//FreeImageWrapper::saveImage("_depth-erode2.png", ColorImageR32G32B32(de));
+	//de = d1; ImageHelper::erode(de, 4);
+	//FreeImageWrapper::saveImage("_depth-erode4.png", ColorImageR32G32B32(de));
 
 	std::cout << "waiting..." << std::endl; getchar();
 }

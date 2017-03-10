@@ -26,8 +26,8 @@ int main(int argc, char* argv[])
 		const std::string outPath = GAS::get().s_outPath;
 		Directory rootDir(srcPath);
 		const auto scenes = rootDir.getDirectories();
-		//const std::vector<std::string> scenes = { "PX4nDJXEHrG" };
-		//GAS::get().s_maxNumSensFiles = 1;
+		//const std::vector<std::string> scenes = { "17DRP5sb8fy" };
+		//GAS::get().s_maxNumSensFiles = 3;
 		
 		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
@@ -36,10 +36,10 @@ int main(int argc, char* argv[])
 			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
 
-			if (util::directoryExists(outPath + "/" + s)) {
-				std::cout << (outPath + "/" + s) << " already exists, skippping" << std::endl;
-				continue;
-			}
+			//if (util::directoryExists(outPath + "/" + s)) {
+			//	std::cout << (outPath + "/" + s) << " already exists, skippping" << std::endl;
+			//	continue;
+			//}
 			  
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s; 
