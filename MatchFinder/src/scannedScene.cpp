@@ -199,12 +199,15 @@ void ScannedScene::matchKeyPoints()
 				if (nn == nullptr) continue;
 
 				size_t numMatches = 0;
-				std::vector<unsigned int> res = nn->fixedRadius(query, maxK, radius);
+				//std::vector<unsigned int> res = nn->fixedRadius(query, maxK, radius);
 				auto resPair = nn->fixedRadiusDist(query, maxK, radius);
-				auto resDist = nn->getDistances((UINT)res.size());
-				for (size_t j = 0; j < res.size(); j++) {
+				//auto resDist = nn->getDistances((UINT)res.size());
+				std::sort(resPair.begin(), resPair.end(), [](const std::pair<unsigned int, float> &left, const std::pair<unsigned int, float> &right) {
+					return fabs(left.second) < fabs(right.second);
+				});
+				for (size_t j = 0; j < resPair.size(); j++) {
 					const KeyPoint& kp0 = m_keyPoints[keyPointIdx];
-					const KeyPoint& kp1 = m_keyPoints[res[j] + nn_offsets[sensorIdx_dst][frameIdx_dst]];
+					const KeyPoint& kp1 = m_keyPoints[resPair[j].first + nn_offsets[sensorIdx_dst][frameIdx_dst]];
 
 					//check world normals
 					float angleDist = std::acos(kp0.m_worldNormal | kp1.m_worldNormal);
@@ -239,6 +242,7 @@ void ScannedScene::matchKeyPoints()
 					m.m_offset = m.m_kp1.m_pixelPos - vec2f(p.x, p.y);
 					m_keyPointMatches.push_back(m);
 					numMatches++;
+					break;
 
 					//std::cout << "orig: " << m.m_kp1.m_pixelPos << std::endl;
 					//std::cout << "repr: " << vec2f(p.x, p.y) << std::endl;
