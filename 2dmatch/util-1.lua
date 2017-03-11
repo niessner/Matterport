@@ -173,7 +173,7 @@ function getDataFiles(input_file, base_path)
     for line in io.lines(input_file) do
         local scene = trim(line)
         if base_path then
-            if paths.filep(paths.concat(base_path, scene, 'matches1.txt')) and paths.filep(paths.concat(base_path, scene, 'negatives1.txt')) then
+            if paths.filep(paths.concat(base_path, scene, 'matches1.txt')) and paths.filep(paths.concat(base_path, scene, 'negatives1.txt')) and paths.dirp(paths.concat(base_path, scene, 'images')) then
                 data_files[#data_files+1] = scene
             else
                 print('warning: skipping non-existent scene ' .. scene)
