@@ -31,8 +31,8 @@ int main(int argc, char* argv[])
 		
 		std::cout << "found " << scenes.size() << " scenes " << std::endl;
 
-		//for (size_t dirIdx = 0; dirIdx < 25; dirIdx++) {
-		for (size_t dirIdx = 0; dirIdx < scenes.size(); dirIdx++) {
+		for (size_t dirIdx = 0; dirIdx < 35; dirIdx++) {
+		//for (size_t dirIdx = 0; dirIdx < scenes.size(); dirIdx++) {
 			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
 
@@ -68,14 +68,14 @@ int main(int argc, char* argv[])
 			std::cout << "writing out matches to " << outPath + "/" + s << "_matches.txt | _negativ.txt" << std::endl;
 
 			if (!util::directoryExists(outPath + "/" + s)) util::makeDirectory(outPath + "/" + s);
-			ss.saveMatches(outPath + "/" + s + "/" + "matches.txt", ss.getMatches(), useTorchOutput);
-			ss.saveMatches(outPath + "/" + s + "/" + "negatives.txt", ss.getNegatives(), useTorchOutput);
+			ss.saveMatches(outPath + "/" + s + "/" + "matches1.txt", ss.getMatches(), useTorchOutput);
+			ss.saveMatches(outPath + "/" + s + "/" + "negatives1.txt", ss.getNegatives(), useTorchOutput);
 
 			//const size_t numPairs = 10;
 			//const size_t minMatches = 5;
 			//ss.visulizeMatches(numPairs, minMatches);
 
-			ss.saveImages(outPath + "/" + s + "/images/");
+			//ss.saveImages(outPath + "/" + s + "/images/");
 
 			if (GAS::get().s_maxNumScenes > 0 && dirIdx + 1 >= GAS::get().s_maxNumScenes) break;
 
