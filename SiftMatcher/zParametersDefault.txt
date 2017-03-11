@@ -1,22 +1,28 @@
 
 
-//s_featureType = "sift";
-//s_outputFile = "sift.csv"; 
-s_featureType = "orb";
-s_outputFile = "orb.csv";
+s_featureType = "sift";
+s_outputFile = "sift.csv"; 
+//s_featureType = "orb";
+//s_outputFile = "orb.csv";
+//s_featureType = "surf";
+//s_outputFile = "surf.csv";
 
 
 //s_srcPath = "W:/data/matterport/v1_converted";
-s_dataPath = "//tirion/share/datasets/Matterport/Matching/";
+s_dataPath = "//tirion/share/datasets/Matterport/Matching1/";
 s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test_small.txt";
 s_maxNumSensors = 3;
 
 s_numThresholds = 1000;
-s_keyMatchSkip = 10;
+s_keyMatchSkip = 20;
 s_keyPadding = 64;
 
 s_maxNumImages = 0
 
-//debugging
-s_dataPath = "../MatchFinder/output/";
-s_outputFile = "test.csv";
+////debugging
+//s_dataPath = "../MatchFinder/ref-output/";
+//s_outputFile = "test.csv";
+
+//full set
+s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
+s_keyMatchSkip = 300;

@@ -54,6 +54,10 @@ public:
 	void computeNormals(NORMAL_TYPE type);
 
 	void saveMatches(const std::string& filename, const std::vector<KeyPointMatch>& matches, bool torch = true) const {
+		if (util::fileExists(filename)) {
+			std::cout << "warning: match file (" << filename << ") already exists, press key to continue" << std::endl;
+			getchar();
+		}
 		std::ofstream outFile(filename);
 
 		if (!torch) {	//human readable one
