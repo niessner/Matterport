@@ -21,6 +21,11 @@ opt_string = [[
     --test_data             (default "scenes_test.txt")      txt file containing test
     --patchSize             (default 64)            patch size to extract (resized to 224)
     --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
+    --imWidth               (default 640)           image dimensions in data folder
+    --imHeight              (default 512)           image dimensions in data folder
+    --detectImWidth         (default 1280)          image dimensions for key detection
+    --detectImHeight        (default 1024)          image dimensions for key detection
+    --retrain               (default "")            initialize training with this model
 ]]
 
 opt = lapp(opt_string)
@@ -45,7 +50,13 @@ torch.manualSeed(0)
 
 
 -- Load model and criterion
-model,criterion = getModel()
+local model,criterion
+if opt.retrain == "" then
+    model,criterion = getModel()
+else
+    model = torch.load(opt.retrain)
+    criterion = nn.DistanceRatioCriterion(true)
+end
 model = model:cuda()
 critrerion = criterion:cuda()
 model:zeroGradParameters()
@@ -78,7 +89,9 @@ do
 end
 
 local patchSize = opt.patchSize
-local saveInterval = 1000
+local saveInterval = 5000
+local scaleX = opt.imWidth / opt.detectImWidth
+local scaleY = opt.imHeight / opt.detectImHeight
 
 ------------------------------------
 -- Training routine
@@ -90,7 +103,7 @@ function train()
     --if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
     --load in the train data (positive and negative matches) 
-    local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip)
+    local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip, opt.imWidth, opt.imHeight, scaleX, scaleY)
     print(#poss)
     --print(poss)
     --print(negs)
@@ -162,44 +175,10 @@ function train()
     epoch = epoch + 1
 end
 
--------------------------------------
--- Test routine
---
-
-function test()
-    --[[model:evaluate()
-    for fn = 1, #test_files do
-        local pos,anc,neg = loadDataFile(train_files[train_file_indices[fn])
-
-        local filesize = (#current_data)[1]
-        local indices = torch.randperm(filesize):long():split(opt.batchSize)
-        for t, v in ipairs(indices) do
-            local inputs = { pos:index(1,v):cuda(), anc:index(1,v):cuda(), neg:index(1,v):cuda() }       
-            local outputs = model:forward(inputs)
-            local loss = criterion:forward(output)
-        end
-    end
-    --TODO PRINT TEST LOSS/ACCURACY 
-    if testLogger then
-        paths.mkdir(opt.save)
-        testLogger:add{train_acc, confusion.totalValid * 100}
-        testLogger:style{'-','-'}
-    end
-    --]]
-
-    -- save model every 10 epochs
-    if epoch % 10 == 0 then
-      local filename = paths.concat(opt.save, 'model_' ..tostring(epoch) .. '.net')
-      print('==> saving model to '..filename)
-      torch.save(filename, model:clearState())
-    end 
-end
-
 -----------------------------------------
 -- Start training
 --
 for i = 1,opt.max_epoch do
     train()
-    --test()
 end
 
