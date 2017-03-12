@@ -21,6 +21,11 @@ opt_string = [[
     --test_data             (default "scenes_test.txt")      txt file containing test
     --patchSize             (default 64)            patch size to extract (resized to 224)
     --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
+    --imWidth               (default 640)           image dimensions in data folder
+    --imHeight              (default 512)           image dimensions in data folder
+    --detectImWidth         (default 1280)          image dimensions for key detection
+    --detectImHeight        (default 1024)          image dimensions for key detection
+    --retrain               (default "")            initialize training with this model
 ]]
 
 opt = lapp(opt_string)
@@ -45,7 +50,13 @@ torch.manualSeed(0)
 
 
 -- Load model and criterion
-model,criterion = getModel()
+local model,criterion
+if opt.retrain == "" then
+    model,criterion = getModel()
+else
+    model = torch.load(opt.retrain)
+    criterion = nn.HingeEmbeddingCriterion(1)
+end
 model = model:cuda()
 critrerion = criterion:cuda()
 model:zeroGradParameters()
@@ -79,6 +90,8 @@ end
 
 local patchSize = opt.patchSize
 local saveInterval = 5000
+local scaleX = opt.imWidth / opt.detectImWidth
+local scaleY = opt.imHeight / opt.detectImHeight
 
 ------------------------------------
 -- Training routine
@@ -90,7 +103,7 @@ function train()
     --if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
     --load in the train data (positive and negative matches) 
-    local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip)
+    local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip, opt.imWidth, opt.imHeight, scaleX, scaleY)
     print(#poss)
     --print(poss)
     --print(negs)

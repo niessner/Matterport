@@ -48,7 +48,7 @@ function inBounds(p, bounds, padding)
 end
 
 
-function loadMatchFiles(basePath, files, padding, skip)
+function loadMatchFiles(basePath, files, padding, skip, imWidth, imHeight, scaleX, scaleY)
     --load in the train data (positive and negative matches) 
     local poss = {}
     local negs = {}
@@ -63,20 +63,19 @@ function loadMatchFiles(basePath, files, padding, skip)
         assert(#_pos == #_neg)
 
         for i = 1, #_pos do 
-            local scale = 2.0    --because our images are only half the size
+            --[[local scale = 2.0    --because our images are only half the size
             _pos[i][4] = strToVec2(_pos[i][4]) / scale
-            _neg[i][4] = strToVec2(_neg[i][4]) / scale
-            --[[_pos[i][4] = strToVec2(_pos[i][4])
-            _pos[i][4][1] = _pos[i][4][1] * 0.5; _pos[i][4][2] = _pos[i][4][2] * 0.46875
+            _neg[i][4] = strToVec2(_neg[i][4]) / scale--]]
+            _pos[i][4] = strToVec2(_pos[i][4])
+            _pos[i][4][1] = _pos[i][4][1] * scaleX; _pos[i][4][2] = _pos[i][4][2] * scaleY
             _neg[i][4] = strToVec2(_neg[i][4])
-            _neg[i][4][1] = _neg[i][4][1] * 0.5; _neg[i][4][2] = _neg[i][4][2] * 0.46875
-            --]]
-
+            _neg[i][4][1] = _neg[i][4][1] * scaleX; _neg[i][4][2] = _neg[i][4][2] * scaleY
+            
             assert(_pos[i][1] == _neg[i][1])    --make sure the match index is the same
         end
 
 
-        local bounds = torch.Tensor{640, 512}--480}
+        local bounds = torch.Tensor{imWidth, imHeight}
         for i = 1, #_pos, 2 do
             assert(_pos[i+0][1] == _pos[i+1][1])    --make sure the match index is the same
             assert(_neg[i+0][1] == _neg[i+1][1])    --make sure the match index is the same
