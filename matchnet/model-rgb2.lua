@@ -6,7 +6,7 @@ require 'cudnn'
 function getModel(useBottleneck)--, useMetricNetwork)
 	
 	local featureNet = nn.Sequential()
-	featureNet:add(nn.SpatialConvolution(1, 24, 7, 7, 1, 1, 3, 3))		--conv0
+	featureNet:add(nn.SpatialConvolution(3, 24, 7, 7, 1, 1, 3, 3))		--conv0
 	featureNet:add(nn.ReLU())
 	featureNet:add(nn.SpatialMaxPooling(3, 3, 2, 2, 1, 1))				--pool0
 	featureNet:add(nn.SpatialConvolution(24, 64, 5, 5, 1, 1, 2, 2))		--conv1
@@ -23,7 +23,7 @@ function getModel(useBottleneck)--, useMetricNetwork)
 	featureNet:add(nn.View(fsize))
 	if useBottleneck then --bottleneck
 		featureNet:add(nn.Linear(fsize, 512))
-		featureNet:add(nn.ReLU())
+		--featureNet:add(nn.ReLU())
 		fsize = 512
 	end
 	featureNet:add(nn.Normalize(2))--normalize descriptor
