@@ -19,10 +19,20 @@ s_keyPadding = 64;
 
 s_maxNumImages = 0
 
+s_keyDetectWidth = 1280;
+s_keyDetectHeight = 1024;
+
 ////debugging
 //s_dataPath = "../MatchFinder/ref-output/";
 //s_outputFile = "test.csv";
 
-//full set
-s_sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_test.txt";
+////mp test set
+//s_sceneFileList = "//tirion/share/datasets/Matterport/Matching1/scenes_test.txt";
+//s_keyMatchSkip = 300;
+
+//sun3d test set
+s_dataPath = "//tirion/share/datasets/Matterport/MatchingSun3d/";
+s_sceneFileList = "//tirion/share/datasets/Matterport/MatchingSun3d/scenes_test.txt";
 s_keyMatchSkip = 300;
+s_keyDetectWidth = 640;
+s_keyDetectHeight = 480;
