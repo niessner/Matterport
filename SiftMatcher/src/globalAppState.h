@@ -18,7 +18,9 @@
 	X(unsigned int, s_maxNumImages) \
 	X(unsigned int, s_maxNumSensors) \
 	X(std::string, s_featureType) \
-	X(std::string, s_outputFile)
+	X(std::string, s_outputFile) \
+	X(unsigned int, s_keyDetectWidth) \
+	X(unsigned int, s_keyDetectHeight)
 	//X(float, s_siftMatchThresh)
 
 
