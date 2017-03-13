@@ -164,7 +164,7 @@ function getDataFiles(input_file, base_path)
 	for line in io.lines(input_file) do
 		local scene = trim(line)
 		if base_path then
-			if paths.dirp(paths.concat(base_path, scene)) then
+			if paths.filep(paths.concat(base_path, scene, 'matches.txt')) then
 				data_files[#data_files+1] = scene
 			else
 				print('warning: skipping non-existent scene ' .. scene)
@@ -191,7 +191,7 @@ function scanDir(directory,query)
 end
 
 function preprocessImg(img)
-	--intensity
+	--[[--intensity
 	local res = torch.add(0.2126*img[{1,{},{}}], torch.add(0.7152*img[{2,{},{}}], 0.0722*img[{3,{},{}}]))
 	if res:size(1) ~= 64 then
 		res = image.scale(res,64, 64)
@@ -199,14 +199,15 @@ function preprocessImg(img)
         local mean = 0.510028
         local std = 0.2113
         res:add(-mean)
-        res:div(std)
-	--[[local mean = {0.524978, 0.510486, 0.468835}
+        res:div(std)--]]
+        if img:size(2) ~= 64 then img = image.scale(img, 64, 64) end
+	local mean = {0.524978, 0.510486, 0.468835}
 	local std = {0.2088, 0.2155, 0.2415}
 	for i=1,3 do
-		res[i]:add(-mean[i])
-		res[i]:div(std[i])
-	end--]]
-	return res
+		img[i]:add(-mean[i])
+		img[i]:div(std[i])
+	end
+	return img
 end
 
 -- Get subset of a 1D table

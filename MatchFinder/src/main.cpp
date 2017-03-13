@@ -36,10 +36,11 @@ int main(int argc, char* argv[])
 			const std::string& s = scenes[dirIdx];
 			if (s == "archive") continue;
 
+			if (util::fileExists(outPath + "/" + s + "/matches1.txt")) {
 			//if (util::directoryExists(outPath + "/" + s)) {
-			//	std::cout << (outPath + "/" + s) << " already exists, skippping" << std::endl;
-			//	continue;
-			//}
+				std::cout << (outPath + "/" + s) << " already exists, skippping" << std::endl;
+				continue;
+			}
 			  
 			std::cout << "Loading Scene: " << s << std::endl;
 			const std::string path = srcPath + "/" + s; 

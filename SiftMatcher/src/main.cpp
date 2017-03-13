@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
 			if (s == "archive") continue;
 
 			const std::string path = dataPath + s;
-			const std::string filenamePos = path + "/matches.txt";
-			const std::string filenameNeg = path + "/negatives.txt";
+			const std::string filenamePos = path + "/matches1.txt";
+			const std::string filenameNeg = path + "/negatives1.txt";
 			if (!util::fileExists(filenamePos) || !util::fileExists(filenameNeg)) continue;
 
 			std::cout << "Loading Scene images: " << s << std::endl;

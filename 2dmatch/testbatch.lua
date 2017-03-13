@@ -8,8 +8,6 @@ dofile('util.lua')
 
 -- example usage:  th test.lua --gpu_index 0 --model ~/data/matthias/Matterport/2dmatch/logs/model_20000.net --train_data none test_data scenes_test.txt
 
-local basePath = '/mnt/raid/datasets/Matterport/Matching1/'
-
 opt_string = [[
     -h,--help                                                print help
     --gpu_index             (default 0)                      GPU index
@@ -20,6 +18,11 @@ opt_string = [[
     --output_dir            (default "output")               output dir for match distances
     --patchSize             (default 64)            patch size to extract (resized to 224)
     --matchFileSkip         (default 10)            only use every skip^th keypoint match in file
+    --basePath              (default '/mnt/raid/datasets/Matterport/Matching1/')   base data path
+    --imWidth               (default 640)           image dimensions in data folder
+    --imHeight              (default 512)           image dimensions in data folder
+    --detectImWidth         (default 1280)          image dimensions for key detection
+    --detectImHeight        (default 1024)          image dimensions for key detection
 ]]
 
 opt = lapp(opt_string)
@@ -50,16 +53,21 @@ cutorch.setDevice(opt.gpu_index+1)
 -- Load training snapshot model
 local model
 if paths.filep(opt.model) then
+    print('loading model from ' .. opt.model)
     model = torch.load(opt.model)
 else
+    print('using untrained model')
     model = getModel()
     model:cuda()
 end
 -- Extract one tower from the training model (3 cloned towers)
 --local patchEncoder = model:get(1):get(1):clone()
 
-local test_files = getDataFiles(paths.concat(basePath,opt.test_data), basePath)
-print(test_files)
+local test_files = getDataFiles(paths.concat(opt.basePath,opt.test_data), opt.basePath)
+print('#test files= ' .. #test_files)
+local scaleX = opt.imWidth / opt.detectImWidth
+local scaleY = opt.imHeight / opt.detectImHeight
+print('\t(scalex, scaley) = (' .. scaleX .. ', ' .. scaleY)
 
 function test(data_files, outpath)
     assert(paths.dirp(outpath))
@@ -67,7 +75,7 @@ function test(data_files, outpath)
     --patchEncoder:evaluate()
     
     --load in the data (positive and negative matches) 
-    local poss, negs = loadMatchFiles(basePath, data_files, opt.patchSize/2, opt.matchFileSkip)
+    local poss, negs = loadMatchFiles(opt.basePath, data_files, opt.patchSize/2, opt.matchFileSkip, opt.imWidth, opt.imHeight, scaleX, scaleY)
     print(#poss)
     print(#negs)
     local count = 0
@@ -96,7 +104,7 @@ function test(data_files, outpath)
             local idx = indices[k]
             --print('idx = ' .. idx)
             local sceneName = poss[idx][1]
-            local imgPath = paths.concat(basePath,sceneName,'images')
+            local imgPath = paths.concat(opt.basePath,sceneName,'images')
             local anc,pos,neg = getTrainingExampleTriplet(imgPath, poss[idx][2], poss[idx][3], negs[idx][3], opt.patchSize)
             inputs_pos[{k-iter+1,{},{},{}}]:copy(pos)
             inputs_anc[{k-iter+1,{},{},{}}]:copy(anc)

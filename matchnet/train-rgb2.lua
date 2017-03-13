@@ -5,10 +5,10 @@ require 'cudnn'
 require 'optim'
 
 -- Custom files
-require 'model'
+require 'model-rgb2'
 require 'sys'
 -- require 'qtwidget' -- for visualizing images
-dofile('util.lua')
+dofile('util-rgb.lua')
 
 opt_string = [[
 	-h,--help									   	print help
@@ -79,7 +79,7 @@ do
 end
 
 local patchSize = opt.patchSize
-local saveInterval = 1000
+local saveInterval = 5000
 
 ------------------------------------
 -- Training routine
@@ -98,8 +98,8 @@ function train()
 	collectgarbage()
 
 	--pre-allocate memory
-	local inputs0 = torch.zeros(opt.batchSize, 1, 64, 64):cuda()
-	local inputs1 = torch.zeros(opt.batchSize, 1, 64, 64):cuda()
+	local inputs0 = torch.zeros(opt.batchSize, 3, 64, 64):cuda()
+	local inputs1 = torch.zeros(opt.batchSize, 3, 64, 64):cuda()
 	local targets = torch.ones(opt.batchSize):cuda()
 	targets[{{opt.batchSize/2+1,opt.batchSize}}]:fill(-1) -- first half is positive, second half is negative
 
@@ -126,8 +126,8 @@ function train()
 			
 			local p0,p1 = getTrainingExample(imgPathPos, poss[idxPos][2], poss[idxPos][3], patchSize)
 			local n0,n1 = getTrainingExample(imgPathNeg, negs[idxNeg][2], negs[idxNeg][3], patchSize)
-			inputs0[{k,1,{},{}}]:copy(p0)
-			inputs1[{k,1,{},{}}]:copy(p1)
+			inputs0[{k,{},{},{}}]:copy(p0)
+			inputs1[{k,{},{},{}}]:copy(p1)
 			inputs0[{opt.batchSize/2+k,{},{},{}}]:copy(n0)
 			inputs1[{opt.batchSize/2+k,{},{},{}}]:copy(n1)
 			
