@@ -5,7 +5,7 @@ require 'cudnn'
 require 'optim'
 
 -- Custom files
-require 'model-rgb2'
+require 'model-rgb'
 require 'sys'
 -- require 'qtwidget' -- for visualizing images
 dofile('util-rgb.lua')
@@ -56,6 +56,7 @@ local model, criterion
 if opt.retrain == "" then
 	model,criterion = getModel(opt.use_bottleneck, opt.learn_metric)
 else 
+	print('loading model ' .. opt.retrain)
 	model = torch.load(opt.retrain)
 	criterion = nn.HingeEmbeddingCriterion(1)
 end
@@ -90,7 +91,7 @@ do
 end
 
 local patchSize = opt.patchSize
-local saveInterval = 1000
+local saveInterval = 5000
 local scaleX = opt.imWidth / opt.detectImWidth
 local scaleY = opt.imHeight / opt.detectImHeight
 
