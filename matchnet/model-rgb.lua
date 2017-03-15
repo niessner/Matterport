@@ -22,8 +22,10 @@ function getModel(useBottleneck)--, useMetricNetwork)
 	local fsize = 4096
 	featureNet:add(nn.View(fsize))
 	if useBottleneck then --bottleneck
-		featureNet:add(nn.Linear(fsize, 512))
-		--featureNet:add(nn.ReLU())
+		--featureNet:add(nn.Linear(fsize, 512))
+		featureNet:add(nn.Linear(fsize, 2048))--1024
+		--featureNet:add(nn.Linear(2048, 2048))
+		featureNet:add(nn.Linear(2048, 512))
 		fsize = 512
 	end
 	featureNet:add(nn.Normalize(2))--normalize descriptor
