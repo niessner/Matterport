@@ -4,6 +4,9 @@
 #include "stdafx.h"
 #include <iomanip>
 #include <valarray>
+enum DISTANCE_TYPE {
+	L2_DIST
+};
 
 void generateTrainTestSplit(const std::string matterportPath);
 
@@ -21,85 +24,13 @@ std::vector<std::string> readScenes(const std::string& filename)
 	return scenes;
 }
 
-void evaluate(const std::string& matterportPath, const std::string& patchFeatPath, const std::vector<std::string>& scenes, const std::string& logFile = "");
-
-void computeTrainStatistics(const std::string& basePath, const std::string& sceneFileList)
-{
-	const vec2ui imageBounds = vec2ui(640, 480);
-	//const vec2ui imageBounds = vec2ui(640, 512);
-
-	std::vector<std::string> scenes;
-	{
-		std::ifstream s(sceneFileList);
-		MLIB_ASSERT(s.is_open());
-		std::string line;
-		while (std::getline(s, line))
-			scenes.push_back(line);
-	}
-	std::vector<size_t> numMatchesPerScene; const unsigned int padding = 128 / 2; const unsigned int matchSkip = 4;
-	std::vector<std::vector<std::pair<vec2f, vec3f>>> keyposPos, keyposNeg; //<image pos, world pos> per scene
-	for (const auto& scene : scenes) {
-		const std::string matchesFile = basePath + scene + "/matches.txt";
-		const std::string negativFile = basePath + scene + "/negatives.txt";
-		if (util::fileExists(matchesFile)) {
-			keyposPos.push_back(std::vector<std::pair<vec2f, vec3f>>());
-			std::ifstream s(matchesFile); std::string line; size_t lineCount = 0;
-			while (std::getline(s, line)) {
-				if (lineCount >= 3 && ((lineCount - 3) % matchSkip == 0 || (lineCount - 3) % matchSkip == 1)) {
-					const auto parts = util::split(line, '\t');
-					const auto partsPixelPos = util::split(parts[3], ' ');
-					vec2f pixPos(util::convertTo<float>(partsPixelPos[0]), util::convertTo<float>(partsPixelPos[1]));
-					pixPos *= 0.5f;
-					const auto partsWorldPos = util::split(parts[5], ' ');
-					vec3f worldPos(util::convertTo<float>(partsWorldPos[0]), util::convertTo<float>(partsWorldPos[1]), util::convertTo<float>(partsWorldPos[2]));
-					keyposPos.back().push_back(std::make_pair(pixPos, worldPos));
-				}
-				lineCount++;
-			}
-		}
-		if (util::fileExists(negativFile)) {
-			keyposNeg.push_back(std::vector<std::pair<vec2f, vec3f>>());
-			std::ifstream s(negativFile); std::string line; size_t lineCount = 0;
-			while (std::getline(s, line)) {
-				if (lineCount >= 3 && ((lineCount - 3) % matchSkip == 0 || (lineCount - 3) % matchSkip == 1)) {
-					const auto parts = util::split(line, '\t');
-					const auto partsPixelPos = util::split(parts[3], ' ');
-					vec2f pixPos(util::convertTo<float>(partsPixelPos[0]), util::convertTo<float>(partsPixelPos[1]));
-					pixPos *= 0.5f;
-					const auto partsWorldPos = util::split(parts[5], ' ');
-					vec3f worldPos(util::convertTo<float>(partsWorldPos[0]), util::convertTo<float>(partsWorldPos[1]), util::convertTo<float>(partsWorldPos[2]));
-					keyposNeg.back().push_back(std::make_pair(pixPos, worldPos));
-				}
-				lineCount++;
-			}
-		}
-	}
-	for (unsigned int p = 0; p < keyposPos.size(); p++) {
-		const auto& keysPos = keyposPos[p];
-		const auto& keysNeg = keyposNeg[p];
-		size_t count = 0;
-		for (unsigned int i = 0; i < keysPos.size(); i += 2) {
-			const vec2f& pixPosA = keysPos[i].first;
-			const vec2f& pixPosB = keysPos[i + 1].first;
-			const vec2f& pixNegA = keysNeg[i].first;
-			const vec2f& pixNegB = keysNeg[i + 1].first;
-			if (pixPosA.x >= padding && pixPosA.y >= padding && pixPosA.x + padding <= imageBounds.x && pixPosA.y + padding <= imageBounds.y &&
-				pixPosB.x >= padding && pixPosB.y >= padding && pixPosB.x + padding <= imageBounds.x && pixPosB.y + padding <= imageBounds.y &&
-				pixNegA.x >= padding && pixNegA.y >= padding && pixNegA.x + padding <= imageBounds.x && pixNegA.y + padding <= imageBounds.y &&
-				pixNegB.x >= padding && pixNegB.y >= padding && pixNegB.x + padding <= imageBounds.x && pixNegB.y + padding <= imageBounds.y) {
-				count++; //#valid key matches per scene
-				//stats
-			}
-		}
-		numMatchesPerScene.push_back(count);
-	}
-	std::sort(numMatchesPerScene.begin(), numMatchesPerScene.end());
-	size_t total = std::accumulate(numMatchesPerScene.begin(), numMatchesPerScene.end(), 0);
-	float avg = (float)total / (float)numMatchesPerScene.size();
-	std::cout << numMatchesPerScene << std::endl;
-	std::cout << "total: " << total << std::endl;
-	std::cout << "avg: " << avg << std::endl;
-}
+float evaluate(const std::string& matterportPath, const std::string& patchFeatPath, const std::vector<std::string>& scenes,
+	DISTANCE_TYPE distType, const std::vector<float>& camAnglesPos, const std::vector<float>& camAnglesNeg,
+	const float angleThresh = std::numeric_limits<float>::infinity(), const std::string& logFile = "");
+void loadCameras(const std::vector<std::string>& scenes, std::unordered_map< std::string, std::vector<std::vector<mat4f>> >& trajectories);
+void computeCameraAngles(const std::string& matchesFile, const std::string& negsFile,
+	const std::vector<std::vector<mat4f>>& trajectories,
+	std::vector<float>& cameraAnglesPos, std::vector<float>& cameraAnglesNeg);
 
 int main(int argc, char* argv[])
 {
@@ -110,17 +41,59 @@ int main(int argc, char* argv[])
 
 	std::srand(0);
 
-	try {
-		if (false) {
-			const std::string basePath = "//tirion/share/datasets/Matterport/Matching/";
-			const std::string sceneFileList = "//tirion/share/datasets/Matterport/Matching/scenes_trainval.txt";
-			computeTrainStatistics(basePath, sceneFileList);
-			std::cout << "DONE" << std::endl;
-			getchar();
+	if (false) {
+		const bool bCountOnly = true;
+		const std::string srcPath = "//tirion/share/datasets/Matterport/Matching1/";
+		const std::string dstPath = "//moonraker/adai/data/Matterport/Matching1/";
+		//const std::string dstPath = "//doriath/share/datasets/Matterport/Matching1/";
+		const std::vector<std::string> files = { "matches1.txt", "negatives1.txt" };
+		Directory dirSrc(srcPath);
+		const auto& scenes = dirSrc.getDirectories();
+		unsigned int count = 0;
+		std::vector<std::string> missingImagesScenes;
+		for (const auto& scene : scenes) {
+			if (bCountOnly) {
+				bool done = true;
+				for (const auto& f : files) {
+					if (!util::fileExists(srcPath + scene + "/" + f)) {
+						done = false;
+						std::cout << "missing: " << scene << std::endl;
+						break;
+					}
+				}
+				if (done) count++;
+			}
+			else {
+				if (!util::directoryExists(dstPath + scene))
+					util::makeDirectory(dstPath + scene);
+				for (const auto& f : files) {
+					if (util::fileExists(srcPath + scene + "/" + f)) {
+						util::copyFile(srcPath + scene + "/" + f, dstPath + scene + "/" + f);
+						count++;
+						std::cout << "\r" << count << "\t" << scene;
+					}
+				}
+				if (!util::directoryExists(dstPath + scene + "/images") || (util::getFileSize(dstPath + scene + "/images/color-00-000000.jpg") != util::getFileSize(srcPath + scene + "/images/color-00-000000.jpg"))) {
+					missingImagesScenes.push_back(scene);
+				}
+			}
 		}
+		if (bCountOnly)
+			std::cout << "count = " << count << std::endl;
+		std::cout << std::endl;
+		std::cout << "#missing images scenes = " << missingImagesScenes.size() << std::endl;
+		if (!missingImagesScenes.empty()) std::cout << missingImagesScenes << std::endl;
+		std::cout << "done" << std::endl;
+		getchar();
+	}
 
-		const std::string matterportPath = "//tirion/share/datasets/Matterport/Matching/";
-		const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output/output-test-1-100948/";
+	try {
+		const bool useCameras = true;
+		const std::string matterportPath = "//tirion/share/datasets/Matterport/MatchingSun3d/";
+		//const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/2dmatch/output-sun3d/all_1-2000/"; const DISTANCE_TYPE distType = DISTANCE_TYPE::L2_DIST;
+		const std::string patchFeatPath = "//moonraker/adai/code/Matterport/2dmatch/output-mp/s3/"; const DISTANCE_TYPE distType = DISTANCE_TYPE::L2_DIST;
+		//const std::string patchFeatPath = "//doriath/share/adai/code/Matterport/2dmatch/output-sun3d/mps3-ms800_1-6000/";     const DISTANCE_TYPE distType = DISTANCE_TYPE::L2_DIST;
+		//const std::string patchFeatPath = "//tirion/share/adai/code/Matterport/matchnet/output/sun3d/tmp/"; const DISTANCE_TYPE distType = DISTANCE_TYPE::L2_DIST;
 		const std::string trainTestPrefix = "scenes_";
 		const std::vector<std::string> phases = { "test" }; //the current one is train/test for same scene
 
@@ -128,7 +101,40 @@ int main(int argc, char* argv[])
 			const std::string fileList = matterportPath + trainTestPrefix + phase + ".txt";
 			std::vector<std::string> scenes = readScenes(fileList);
 			if (scenes.empty()) { std::cout << "warning: no scenes found from " << fileList << std::endl; continue; }
-			evaluate(matterportPath, patchFeatPath + phase + "/", scenes, phase + ".csv");
+			std::unordered_map< std::string, std::vector<std::vector<mat4f>> > trajectories;
+			std::vector<float> camAnglesPos, camAnglesNeg;
+			if (useCameras) {
+				const std::string camAngleCacheFile = "cameraAngles.cache";
+				if (util::fileExists(camAngleCacheFile)) {
+					BinaryDataStreamFile s(camAngleCacheFile, false);
+					s >> camAnglesPos; s >> camAnglesNeg; s.close();
+				}
+				else {
+					loadCameras(scenes, trajectories);
+					for (const auto& a : trajectories) {
+						computeCameraAngles(matterportPath + a.first + "/matches1.txt", matterportPath + a.first + "/negatives1.txt",
+							a.second, camAnglesPos, camAnglesNeg);
+					}
+					BinaryDataStreamFile s(camAngleCacheFile, true);
+					s << camAnglesPos; s << camAnglesNeg; s.close();
+				}
+				MLIB_ASSERT(camAnglesPos.size() == camAnglesNeg.size());
+				const unsigned int numAngleThresh = 100;
+				const float maxAngle = std::max(*std::max_element(camAnglesPos.begin(), camAnglesPos.end()), *std::max_element(camAnglesNeg.begin(), camAnglesNeg.end()));
+				std::cout << "max angle = " << maxAngle << std::endl;
+				std::ofstream ofs("angles.csv"); ofs << "angle thresh (degrees),fp" << std::endl;
+				for (unsigned int i = 1; i <= numAngleThresh; i++) {
+					const float angleThresh = maxAngle*(float)i/(float)numAngleThresh;
+					const float fp = evaluate(matterportPath, patchFeatPath + phase + "/", scenes, distType, camAnglesPos, camAnglesNeg, angleThresh);
+					if (fp != 0) ofs << math::radiansToDegrees(angleThresh) << "," << fp << std::endl;
+				}
+				ofs.close();
+				std::cout << "DONE DONE DONE" << std::endl;
+			}
+			else {
+				evaluate(matterportPath, patchFeatPath + phase + "/", scenes, distType, camAnglesPos, camAnglesNeg,
+					std::numeric_limits<float>::infinity(), phase + ".csv");
+			}
 		}
 
 
@@ -186,6 +192,150 @@ void generateTrainTestSplit(const std::string matterportPath)
 	std::cout << "generated " << numTrainScenes << " train, " << numValScenes << " val scenes, " << numTestScenes << " test scans" << std::endl;
 }
 
+struct KeyMatch {
+	vec2ui sensImIdx0;
+	vec2ui sensImIdx1;
+	vec2f pixPos0;
+	vec2f pixPos1;
+	vec3f worldPos0;
+	vec3f worldPos1;
+};
+void readKeyMatches(const std::string& matchesFile, std::vector<KeyMatch>& res)
+{
+	const float scale = 1.0f;
+	const unsigned int skip = 1;
+
+	std::ifstream s(matchesFile);
+	if (!s.is_open()) throw MLIB_EXCEPTION("failed to open file " + matchesFile + " for read");
+	std::string line;
+	size_t lineCount = 0, kpMatchCount = 0;
+	while (std::getline(s, line)) {
+		if (lineCount >= 3) { //skip header lines
+			if ((lineCount - 3) % skip == 0 || (lineCount - 3) % skip == 1) {
+				const auto parts = util::split(line, '\t');
+				const unsigned int sensorIdx = util::convertTo<unsigned int>(parts[1]);
+				const unsigned int imageIdx = util::convertTo<unsigned int>(parts[2]);
+				vec2f pixelPos = util::convertTo<vec2f>(parts[3]);
+				const vec3f worldPos = util::convertTo<vec3f>(parts[5]);
+				pixelPos *= scale;
+
+				if (kpMatchCount % 2 == 0) { //new match
+					res.push_back(KeyMatch());
+					res.back().sensImIdx0 = vec2ui(sensorIdx, imageIdx);
+					res.back().pixPos0 = pixelPos;
+					res.back().worldPos0 = worldPos;
+				}
+				else { //part of current match
+					res.back().sensImIdx1 = vec2ui(sensorIdx, imageIdx);
+					res.back().pixPos1 = pixelPos;
+					res.back().worldPos1 = worldPos;
+				}
+				kpMatchCount++;
+				if (kpMatchCount % 1000 == 0) std::cout << "\r[ read " << kpMatchCount << " ]";
+			}
+		}
+		lineCount++;
+	}
+	std::cout << "\r[ read " << kpMatchCount << " of " << lineCount << " lines ]" << std::endl;
+}
+
+void computeCameraAngles(const std::string& matchesFile, const std::string& negsFile,
+	const std::vector<std::vector<mat4f>>& trajectories,
+	std::vector<float>& cameraAnglesPos, std::vector<float>& cameraAnglesNeg)
+{
+
+	std::vector<KeyMatch> keyMatches, keyNegs;
+	readKeyMatches(matchesFile, keyMatches);
+	readKeyMatches(negsFile, keyNegs);
+	std::cout << "#read poss = " << keyMatches.size() << std::endl;
+	std::cout << "#read negs = " << keyNegs.size() << std::endl;
+
+	const unsigned int pad = 64 / 2;
+	const unsigned int imageWidth = 640;
+	const unsigned int imageHeight = 480;
+
+	std::vector<KeyMatch> poss, negs;
+	for (unsigned int i = 0; i < keyMatches.size(); i++) {
+		const auto& pos = keyMatches[i];
+		const auto& neg = keyNegs[i];
+		MLIB_ASSERT(pos.sensImIdx0 == neg.sensImIdx0);
+
+		const bool bInBounds =
+			pos.pixPos0.x >= pad &&  pos.pixPos0.x + pad <= imageWidth &&
+			pos.pixPos0.y >= pad &&  pos.pixPos0.y + pad <= imageHeight &&
+			pos.pixPos1.x >= pad &&  pos.pixPos1.x + pad <= imageWidth &&
+			pos.pixPos1.y >= pad &&  pos.pixPos1.y + pad <= imageHeight &&
+			neg.pixPos1.x >= pad &&  neg.pixPos1.x + pad <= imageWidth &&
+			neg.pixPos1.y >= pad &&  neg.pixPos1.y + pad <= imageHeight;
+
+		if (bInBounds) {
+			poss.push_back(pos);
+			negs.push_back(neg);
+		}
+	}
+	std::cout << "#poss = " << poss.size() << std::endl;
+	std::cout << "#negs = " << negs.size() << std::endl;
+	//compute angles
+	for (unsigned int i = 0; i < poss.size(); i++) {
+		const float dotPos = (trajectories[poss[i].sensImIdx0.x][poss[i].sensImIdx0.y].getTranslation() - poss[i].worldPos0).getNormalized() |
+			(trajectories[poss[i].sensImIdx1.x][poss[i].sensImIdx1.y].getTranslation() - poss[i].worldPos1).getNormalized();
+		const float dotNeg = (trajectories[negs[i].sensImIdx0.x][negs[i].sensImIdx0.y].getTranslation() - negs[i].worldPos0).getNormalized() |
+			(trajectories[negs[i].sensImIdx1.x][negs[i].sensImIdx1.y].getTranslation() - negs[i].worldPos1).getNormalized();
+		cameraAnglesPos.push_back(std::acos(math::clamp(dotPos, -1.0f, 1.0f)));
+		cameraAnglesNeg.push_back(std::acos(math::clamp(dotNeg, -1.0f, 1.0f)));
+		if (cameraAnglesPos.back() != cameraAnglesPos.back() || cameraAnglesNeg.back() != cameraAnglesNeg.back()) {
+			std::cout << "ERROR invalid camera angle: (" << dotPos << ", " << cameraAnglesPos.back() << ") (" << dotNeg << ", " << cameraAnglesNeg.back() << ")" << std::endl;
+			getchar();
+		}
+	}
+	std::cout << "#cpos = " << cameraAnglesPos.size() << std::endl;
+	std::cout << "#cneg = " << cameraAnglesNeg.size() << std::endl;
+}
+
+void loadCameras(const std::vector<std::string>& scenes, std::unordered_map< std::string, std::vector<std::vector<mat4f>> >& trajectories)
+{
+	trajectories.clear();
+	const std::string cacheFile = "cameras.cache";
+	if (util::fileExists(cacheFile)) {
+		std::cout << "loading cameras from cache... ";
+		BinaryDataStreamFile s(cacheFile, false);
+		s >> trajectories; s.close();
+		std::cout << "done!" << std::endl;
+	}
+	else {
+		std::cout << "reading cameras from sens files..." << std::endl;
+		//const std::string datapath = "W:/data/matterport/v1_converted/";
+		const std::string datapath = "W:/data/sun3d/";
+		unsigned int idx = 0;
+		for (const std::string& scene : scenes) {
+			//std::vector<std::vector<mat4f>> trajectory(3);
+			//for (unsigned int i = 0; i < 3; i++) {
+			//	const std::string sensFile = datapath + scene + "/" + scene + "_" + std::to_string(i) + ".sens";
+			//	if (!util::fileExists(sensFile)) throw MLIB_EXCEPTION("sens file (" + sensFile + ") does not exist!");
+			//	SensorData sd(sensFile);
+			//	trajectory[i].resize(sd.m_frames.size());
+			//	for (unsigned int f = 0; f < sd.m_frames.size(); f++)
+			//		trajectory[i][f] = sd.m_frames[f].getCameraToWorld();
+			//}
+			std::vector<std::vector<mat4f>> trajectory(1);
+			{
+				const std::string sensFile = datapath + scene + "/" + scene + "_ground_truth.sens";
+				if (!util::fileExists(sensFile)) throw MLIB_EXCEPTION("sens file (" + sensFile + ") does not exist!");
+				SensorData sd(sensFile);
+				trajectory[0].resize(sd.m_frames.size());
+				for (unsigned int f = 0; f < sd.m_frames.size(); f++)
+					trajectory[0][f] = sd.m_frames[f].getCameraToWorld();
+			}
+			trajectories[scene] = trajectory;
+			std::cout << "\r[ " << ++idx << " | " << scenes.size() << " ]";
+		}
+		BinaryDataStreamFile s(cacheFile, true);
+		s << trajectories; s.close();
+		std::cout << std::endl << "done!" << std::endl;
+
+	}
+}
+
 void readFeatureVectors(const std::string& filename, std::vector<std::valarray<float>>& features)
 {
 	if (!util::fileExists(filename)) throw MLIB_EXCEPTION("file " + filename + " does not exist!");
@@ -235,6 +385,21 @@ void computeDistancesL2(const std::vector<std::valarray<float>>& feats0, const s
 		dists[i] = computeDistanceL2(feats0[i], feats1[i]);
 }
 
+//// compute feats0.size() dists between corresponding feats of feats0 and feats1
+//void computeDistances(DISTANCE_TYPE distType, const std::vector<std::valarray<float>>& feats0, const std::vector<std::valarray<float>>& feats1, std::vector<float>& dists)
+//{
+//	switch (distType)
+//	{
+//		case DISTANCE_TYPE::L2_DIST:
+//			computeDistancesL2(feats0, feats1, dists);
+//			break;
+//		default:
+//			//should never get here
+//			break;
+//	}
+//}
+
+
 vec4ui evaluatePosMatch(const std::vector<float>& dists, const float thresh)
 {
 	unsigned int truePos = 0, falsePos = 0, trueNeg = 0, falseNeg = 0;
@@ -254,8 +419,10 @@ vec4ui evaluateNegMatch(const std::vector<float>& dists, const float thresh)
 	return vec4ui(truePos, falsePos, trueNeg, falseNeg);
 }
 
-//#define USE_POS_NEG
-void evaluate(const std::string& matterportPath, const std::string& patchFeatPath, const std::vector<std::string>& scenes, const std::string& logFile /*= ""*/)
+
+float evaluate(const std::string& matterportPath, const std::string& patchFeatPath, const std::vector<std::string>& scenes,
+	DISTANCE_TYPE distType, const std::vector<float>& camAnglesPos, const std::vector<float>& camAnglesNeg, 
+	const float angleThresh /*= std::numeric_limits<float>::infinity()*/, const std::string& logFile /*= ""*/)
 {
 	//TODO: output stats per scenes?
 	//Note: currently ignores scenes
@@ -263,27 +430,43 @@ void evaluate(const std::string& matterportPath, const std::string& patchFeatPat
 	const unsigned int numDescDistThresholds = 1000;
 	Timer t;
 
-	std::vector<float> ancPosDists, ancNegDists, posNegDists;
+	std::vector<float> ancPosDists, ancNegDists; //hack...
 	if (true) {	//read feature vectors 
-		std::cout << "reading feature vectors..." << std::endl; t.start();
-		const std::string ancFeatFile = patchFeatPath + "anc_feat.txt";
-		const std::string posFeatFile = patchFeatPath + "pos_feat.txt";
-		const std::string negFeatFile = patchFeatPath + "neg_feat.txt";
-		std::vector<std::valarray<float>> ancFeats, posFeats, negFeats;
-		readFeatureVectors(ancFeatFile, ancFeats);
-		readFeatureVectors(posFeatFile, posFeats);
-		readFeatureVectors(negFeatFile, negFeats);
-		size_t numFeats = std::min(ancFeats.size(), std::min(posFeats.size(), negFeats.size()));
-		t.stop(); std::cout << "[ " << t.getElapsedTime() << " s ] read " << numFeats << " features (" << ancFeats.size() << ", " << posFeats.size() << ", " << negFeats.size() << ")" << std::endl;
+		const std::string cachefile = "features.cache";
+		if (util::fileExists(cachefile)) {
+			BinaryDataStreamFile s(cachefile, false);
+			s >> ancPosDists;
+			s >> ancNegDists;
+		}
+		else {
+			std::cout << "reading feature vectors..." << std::endl; t.start();
+			const std::string ancFeatFile = patchFeatPath + "anc_feat.txt";
+			const std::string posFeatFile = patchFeatPath + "pos_feat.txt";
+			const std::string negFeatFile = patchFeatPath + "neg_feat.txt";
+			std::vector<std::valarray<float>> ancFeats, posFeats, negFeats;
+			readFeatureVectors(ancFeatFile, ancFeats);
+			readFeatureVectors(posFeatFile, posFeats);
+			readFeatureVectors(negFeatFile, negFeats);
+			size_t numFeats = std::min(ancFeats.size(), std::min(posFeats.size(), negFeats.size()));
+			t.stop(); std::cout << "[ " << t.getElapsedTime() << " s ] read " << numFeats << " features (" << ancFeats.size() << ", " << posFeats.size() << ", " << negFeats.size() << ")" << std::endl;
 
-		//anc-pos -> match, anc-neg -> not match, pos-neg -> not match
-		std::cout << "computing feature distances... "; t.start();
-		computeDistancesL2(ancFeats, posFeats, ancPosDists);
-		computeDistancesL2(ancFeats, negFeats, ancNegDists);
-#ifdef USE_POS_NEG
-		computeDistancesL2(posFeats, negFeats, posNegDists);
-#endif
-		t.stop(); std::cout << "done! (" << t.getElapsedTime() << " s)" << std::endl;
+			//anc-pos -> match, anc-neg -> not match, pos-neg -> not match
+			std::cout << "computing feature distances... "; t.start();
+			computeDistancesL2(ancFeats, posFeats, ancPosDists);
+			computeDistancesL2(ancFeats, negFeats, ancNegDists);
+			//compute loss
+			float loss = 0.0f;
+			for (unsigned int i = 0; i < ancPosDists.size(); i++) {
+				loss += -std::log(std::exp(-ancPosDists[i]) / (std::exp(-ancPosDists[i]) + std::exp(-ancNegDists[i])));
+			}
+			std::cout << "loss = " << (loss / (float)ancPosDists.size()) << " (" << loss << " / " << ancPosDists.size() << ")" << std::endl;
+			t.stop(); std::cout << "done! (" << t.getElapsedTime() << " s)" << std::endl;
+			BinaryDataStreamFile s(cachefile, true);
+			s << ancPosDists; s << ancNegDists;
+			s.close();
+			std::cout << "CACHED" << std::endl;
+			getchar();
+		}
 	}
 	else { //generate random distances
 		const unsigned int numDists = 170659;
@@ -295,15 +478,20 @@ void evaluate(const std::string& matterportPath, const std::string& patchFeatPat
 			ancNegDists[i] = math::randomUniform(0.0f, maxDist);
 		}
 	}
+	if (angleThresh != std::numeric_limits<float>::infinity()) {
+		for (int i = (int)ancPosDists.size()-1; i >= 0; i--) {
+			if (camAnglesPos[i] > angleThresh) ancPosDists.erase(ancPosDists.begin() + i);
+			if (camAnglesNeg[i] > angleThresh) ancNegDists.erase(ancNegDists.begin() + i);
+		}
+		std::cout << "[ " << ancPosDists.size() << ", " << ancNegDists.size() << " ] pos/neg dists (thresh " << angleThresh << ")" << std::endl;
+		if (ancPosDists.empty() || ancNegDists.empty()) {
+			return 0.0f;
+		}
+	}
 
 	const auto ancPosMaxIt = std::max_element(ancPosDists.begin(), ancPosDists.end());
 	const auto ancNegMaxIt = std::max_element(ancNegDists.begin(), ancNegDists.end());
-#ifdef USE_POS_NEG
-	const auto posNegMaxIt = std::max_element(posNegDists.begin(), posNegDists.end());
-	const float maxDist = std::max(*ancPosMaxIt, std::max(*ancNegMaxIt, *posNegMaxIt));
-#else
 	const float maxDist = std::max(*ancPosMaxIt, *ancNegMaxIt);
-#endif
 	std::cout << "==> max dist = " << maxDist << std::endl;
 
 	std::vector<float> thresholds(numDescDistThresholds);
@@ -330,8 +518,8 @@ void evaluate(const std::string& matterportPath, const std::string& patchFeatPat
 	}
 	float errAt95Recall = 0.0f; unsigned int norm = 0;
 	for (unsigned int i = 0; i < thresholds.size(); i++) {
-		//if (recall[i] > 0.949 && recall[i] < 0.951) {
-		if (recall[i] > 0.94 && recall[i] < 0.96) {
+		if (recall[i] > 0.949 && recall[i] < 0.951) {
+			//if (recall[i] > 0.94 && recall[i] < 0.96) {
 			errAt95Recall += rateFP[i];
 			norm++;
 		}
@@ -353,5 +541,6 @@ void evaluate(const std::string& matterportPath, const std::string& patchFeatPat
 		}
 		std::cout << "done!" << std::endl;
 	}
+	return errAt95Recall;
 }
 
