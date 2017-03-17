@@ -99,7 +99,7 @@ function test(data_files, outpath)
     for iter = 1,#poss,opt.batchSize do
         local trainIter = (iter-1)/opt.batchSize+1
         xlua.progress(trainIter, numIters)
-        local curBatchSize = math.min(opt.batchSize, #poss - iter)
+        local curBatchSize = math.min(opt.batchSize, #poss - iter - 1)
         for k = iter,iter+curBatchSize-1 do
             local idx = indices[k]
             --print('idx = ' .. idx)
