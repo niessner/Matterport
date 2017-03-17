@@ -5,7 +5,7 @@ require 'cudnn'
 require 'optim'
 
 -- Custom files
-require 'model-rgb2'
+require 'model-rgb'
 require 'sys'
 -- require 'qtwidget' -- for visualizing images
 dofile('util-rgb.lua')
@@ -15,7 +15,7 @@ opt_string = [[
 	-s,--save			(default "logs")			subdirectory to save logs
 	-b,--batchSize		(default 32)				batch size
 	-g,--gpu_index		(default 0)			 		GPU index (start from 0)
-	--max_epoch			(default 10)				maximum number of epochs
+	--max_epoch			(default 2)					maximum number of epochs
 	--basePath			(default "/mnt/raid/datasets/Matterport/Matching1/")	base path for train/test data
 	--train_data		(default "scenes_train_small.txt")	 						txt file containing train
 	--test_data			(default "scenes_test_small.txt")	  							txt file containing test
@@ -23,6 +23,11 @@ opt_string = [[
 	--matchFileSkip		(default 80)				only use every skip^th keypoint match in file
 	--use_bottleneck	(default true)
 	--learn_metric		(default false)
+	--retrain 			(default "")
+	--imWidth           (default 640)           image dimensions in data folder
+	--imHeight          (default 512)           image dimensions in data folder
+	--detectImWidth     (default 1280)          image dimensions for key detection
+	--detectImHeight    (default 1024)          image dimensions for key detection
 ]]
 
 opt = lapp(opt_string)
@@ -47,7 +52,14 @@ torch.manualSeed(0)
 
 
 -- Load model and criterion
-model,criterion = getModel(opt.use_bottleneck, opt.learn_metric)
+local model, criterion
+if opt.retrain == "" then
+	model,criterion = getModel(opt.use_bottleneck, opt.learn_metric)
+else 
+	print('loading model ' .. opt.retrain)
+	model = torch.load(opt.retrain)
+	criterion = nn.HingeEmbeddingCriterion(1)
+end
 model = model:cuda()
 critrerion = criterion:cuda()
 parameters, gradParameters = model:getParameters()
@@ -80,6 +92,8 @@ end
 
 local patchSize = opt.patchSize
 local saveInterval = 5000
+local scaleX = opt.imWidth / opt.detectImWidth
+local scaleY = opt.imHeight / opt.detectImHeight
 
 ------------------------------------
 -- Training routine
@@ -91,7 +105,7 @@ function train()
 	--if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
 	--load in the train data (positive and negative matches) 
-	local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip)
+	local poss, negs = loadMatchFiles(opt.basePath, train_files, patchSize/2, opt.matchFileSkip, opt.imWidth, opt.imHeight, scaleX, scaleY)
 	print(#poss)
 	--print(poss)
 	--print(negs)

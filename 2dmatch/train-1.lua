@@ -26,6 +26,7 @@ opt_string = [[
     --detectImWidth         (default 1280)          image dimensions for key detection
     --detectImHeight        (default 1024)          image dimensions for key detection
     --retrain               (default "")            initialize training with this model
+    --resetModel            (default false)
 ]]
 
 opt = lapp(opt_string)
@@ -53,6 +54,10 @@ torch.manualSeed(0)
 local model,criterion
 if opt.retrain == "" then
     model,criterion = getModel()
+	if opt.resetModel then
+        print('reset model')
+        recursiveModelReset(model)
+    end
 else
     model = torch.load(opt.retrain)
     criterion = nn.HingeEmbeddingCriterion(1)

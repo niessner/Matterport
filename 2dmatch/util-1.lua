@@ -247,6 +247,21 @@ function recursiveModelFreeze(model)
     end
 end
 
+function recursiveModelReset(model)
+    for i = 1,model:size() do
+        local tmpLayer = model:get(i)
+        --print(i)
+        --print(tmpLayer)
+        if torch.type(tmpLayer):find('Convolution') or torch.type(tmpLayer):find('Linear') then
+            --print('reset')
+            tmpLayer:reset()
+        end
+        if torch.type(tmpLayer):find('Sequential') or torch.type(tmpLayer):find('ConcatTable') or torch.type(tmpLayer):find('ParallelTable') then
+            recursiveModelReset(tmpLayer)
+        end
+    end
+end
+
 -- Load depth file (saved as 16-bit PNG in centimeters)
 function loadDepth(filename)
     depth = image.load(filename)*65536/10000

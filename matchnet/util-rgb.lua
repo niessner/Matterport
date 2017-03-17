@@ -48,7 +48,7 @@ function inBounds(p, bounds, padding)
 end
 
 
-function loadMatchFiles(basePath, files, padding, skip)
+function loadMatchFiles(basePath, files, padding, skip, imWidth, imHeight, scaleX, scaleY)
 	--load in the train data (positive and negative matches) 
 	local poss = {}
 	local negs = {}
@@ -56,27 +56,28 @@ function loadMatchFiles(basePath, files, padding, skip)
 		local sceneName = files[fn] 
 		local file_pos = paths.concat(basePath, sceneName, 'matches.txt')
 		local file_neg = paths.concat(basePath, sceneName, 'negatives.txt')
-
+		if paths.filep(file_pos) == false or paths.filep(file_neg) == false then
+			file_pos = paths.concat(basePath, sceneName, 'matches1.txt')
+			file_neg = paths.concat(basePath, sceneName, 'negatives1.txt')
+		end
 		local _pos = loadMatchFile(file_pos, skip)
 		local _neg = loadMatchFile(file_neg, skip)
 
 		assert(#_pos == #_neg)
 
 		for i = 1, #_pos do 
-			local scale = 2.0	--because our images are only half the size
-			_pos[i][4] = strToVec2(_pos[i][4]) / scale
-			_neg[i][4] = strToVec2(_neg[i][4]) / scale
-			--[[_pos[i][4] = strToVec2(_pos[i][4])
-			_pos[i][4][1] = _pos[i][4][1] * 0.5; _pos[i][4][2] = _pos[i][4][2] * 0.46875
-			_neg[i][4] = strToVec2(_neg[i][4])
-			_neg[i][4][1] = _neg[i][4][1] * 0.5; _neg[i][4][2] = _neg[i][4][2] * 0.46875
-			--]]
+            --[[local scale = 2.0    --because our images are only half the size
+            _pos[i][4] = strToVec2(_pos[i][4]) / scale
+            _neg[i][4] = strToVec2(_neg[i][4]) / scale--]]
+            _pos[i][4] = strToVec2(_pos[i][4])
+            _pos[i][4][1] = _pos[i][4][1] * scaleX; _pos[i][4][2] = _pos[i][4][2] * scaleY
+            _neg[i][4] = strToVec2(_neg[i][4])
+            _neg[i][4][1] = _neg[i][4][1] * scaleX; _neg[i][4][2] = _neg[i][4][2] * scaleY
 
 			assert(_pos[i][1] == _neg[i][1])	--make sure the match index is the same
 		end
 
-
-		local bounds = torch.Tensor{640, 512}--480}
+        local bounds = torch.Tensor{imWidth, imHeight}
 		for i = 1, #_pos, 2 do
 			assert(_pos[i+0][1] == _pos[i+1][1])	--make sure the match index is the same
 			assert(_neg[i+0][1] == _neg[i+1][1])	--make sure the match index is the same
@@ -164,7 +165,7 @@ function getDataFiles(input_file, base_path)
 	for line in io.lines(input_file) do
 		local scene = trim(line)
 		if base_path then
-			if paths.filep(paths.concat(base_path, scene, 'matches.txt')) then
+			if paths.filep(paths.concat(base_path, scene, 'matches.txt')) or paths.filep(paths.concat(base_path, scene, 'matches1.txt'))then
 				data_files[#data_files+1] = scene
 			else
 				print('warning: skipping non-existent scene ' .. scene)

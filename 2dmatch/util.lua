@@ -203,8 +203,10 @@ function preprocessImg(img)
     if img:size(1) ~= 224 then
         img = image.scale(img,224,224)
     end
-    local mean = {0.485,0.456,0.406}
-    local std = {0.229,0.224,0.225}
+    --local mean = {0.485,0.456,0.406}
+    --local std = {0.229,0.224,0.225}
+    local mean = {0.524978, 0.510486, 0.468835}
+    local std = {0.2088, 0.2155, 0.2415}
     for i=1,3 do
         img[i]:add(-mean[i])
         img[i]:div(std[i])
