@@ -50,7 +50,12 @@ int main(int argc, char* argv[])
 				scenes.push_back(line);
 			s.close();
 		}
-		//scenes = { "ScanNet-2016-07-25_11-39-46" };//debugging (small scene)
+		//{
+		//	std::vector<std::string> tmp;
+		//	for (unsigned int i = 0; i < 380; i++) tmp.push_back(scenes[i]);
+		//	scenes = tmp;
+		//}
+		//scenes = { "ScanNet-2016-07-24_01-55-26" };//debugging
 		
 		if (maxNumScenes == 0 || scenes.size() < maxNumScenes) maxNumScenes = (unsigned int)scenes.size();
 		std::cout << maxNumScenes << " scenes" << std::endl;

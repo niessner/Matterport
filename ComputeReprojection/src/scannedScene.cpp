@@ -51,8 +51,8 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 	});
 	unsigned int curFramePairIdx = 0;
 	unsigned int skip = 1;
-	if (numFrames > 2000 && numFrames < 3000) skip = 100;
-	else if (numFrames > 3000) skip = 200;
+	if (numFrames > 2000 && numFrames < 3000) skip = 10;
+	else if (numFrames > 3000) skip = 20;
 #endif
 
 	ReprojError err;
@@ -62,7 +62,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 	while (numFound < maxNumFramePairSamples && numTries < maxNumSampleTries) {
 		numTries++;
 #ifdef FIND_FAR_CAMERAS
-		if (numFound == 0 && numTries % 1000 == 0) std::cout << "\rtry " << numTries;
+		if (numFound == 0 && numTries % 100 == 0) std::cout << "\rtry " << numTries << "\t" << curFramePairIdx << "\t" << framePairCameraDists[curFramePairIdx].second;
 		const unsigned int f0 = framePairCameraDists[curFramePairIdx].first.x;
 		const unsigned int f1 = framePairCameraDists[curFramePairIdx].first.y;
 		curFramePairIdx+=skip;
@@ -171,7 +171,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 
 		ReprojError e = Reprojection::computeReprojection(depth0, intensity0, depth1, intensity1, 
 			depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1, maxDepth);
-		if (e.numCorrs < 100) //== 0) 
+		if (e.numCorrs == 0) 
 			continue; // no intersection
 		////debugging
 		//const bool first = !util::fileExists("cameras.csv");
@@ -184,18 +184,39 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		sampledCameraDists.push_back(vec3f::dist(t0.getTranslation(), t1.getTranslation()));
 		if (numFound == 0) {
 			framePairCameraDists.erase(framePairCameraDists.begin(), framePairCameraDists.begin() + curFramePairIdx);
-			float sum = 0.0f; unsigned int end = (unsigned int)framePairCameraDists.size();
+			unsigned int idx24 = 0, idx2 = 0, idx1 = 0, idx05 = 0;
 			for (unsigned int i = 0; i < framePairCameraDists.size(); i++) {
-				sum += framePairCameraDists[i].second;
-				if (i > maxNumFramePairSamples * 2) {
-					const float avg = sum / (float)i;
-					if (avg <= avgCameraDist) {
-						end = i;
-						break;
-					}
-				}
+				if (idx24 == 0 && framePairCameraDists[i].second < 2.4f) idx24 = i;
+				if (idx2 == 0 && framePairCameraDists[i].second < 2.0f) idx2 = i;
+				if (idx1 == 0 && framePairCameraDists[i].second < 1.0f) idx1 = i;
+				if (idx05 == 0 && framePairCameraDists[i].second < 0.5f) idx05 = i;
 			}
-			if (end < framePairCameraDists.size()) framePairCameraDists.erase(framePairCameraDists.begin() + end, framePairCameraDists.end());
+			std::cout << "\rnew set size = " << framePairCameraDists.size() << "\t(" << framePairCameraDists.front().second << "," << framePairCameraDists.back().second << ")" << std::endl;
+			{
+				std::vector< std::pair<vec2ui, float> > tmp; std::vector<unsigned int> indices;
+				indices = std::vector<unsigned int>(std::min((unsigned int)maxNumFramePairSamples * 90, idx24)); //indices for dists > 2.4m
+				for (unsigned int i = 0; i < indices.size(); i++) indices[i] = i;
+				std::random_shuffle(indices.begin(), indices.end());
+				for (const auto& idx : indices) tmp.push_back(framePairCameraDists[idx]);
+
+				indices = std::vector<unsigned int>(std::min((unsigned int)maxNumFramePairSamples * 10, idx24 - idx2)); //indices for dists > 2m
+				for (unsigned int i = idx24; i < idx24 + indices.size(); i++) indices[i - idx24] = i;
+				std::random_shuffle(indices.begin(), indices.end());
+				for (const auto& idx : indices) tmp.push_back(framePairCameraDists[idx]);
+
+				indices = std::vector<unsigned int>(std::min((unsigned int)(maxNumFramePairSamples * 0.5f), idx1 - idx2)); //indices for dists > 1m
+				std::random_shuffle(indices.begin(), indices.end());
+				for (unsigned int i = idx2; i < idx2 + indices.size(); i++) indices[i - idx2] = i;
+				for (const auto& idx : indices) tmp.push_back(framePairCameraDists[idx]);
+
+				indices = std::vector<unsigned int>(std::min((unsigned int)(maxNumFramePairSamples * 0.1f), idx05 - idx1)); //indices for dists > 0.5m
+				std::random_shuffle(indices.begin(), indices.end());
+				for (unsigned int i = idx1; i < idx1 + indices.size(); i++) indices[i - idx1] = i;
+				for (const auto& idx : indices) tmp.push_back(framePairCameraDists[idx]);
+
+				framePairCameraDists = tmp;
+			}
+			std::cout << "trunc set size = " << framePairCameraDists.size() << std::endl;
 			std::random_shuffle(framePairCameraDists.begin(), framePairCameraDists.end());
 			curFramePairIdx = 0;
 			skip = 1;
@@ -317,6 +338,8 @@ bool Reprojection::checkValidReprojection(const DepthImage32& depth0, const Dept
 	const float depthMax = maxDepth;
 	const float INVALID = -std::numeric_limits<float>::infinity();
 
+	unsigned int count = 0;
+
 #pragma omp parallel for
 	for (int _y = 0; _y < (int)depth0.getHeight(); _y += subsampleFactor) {
 		unsigned int y = (unsigned int)_y;
@@ -338,7 +361,8 @@ bool Reprojection::checkValidReprojection(const DepthImage32& depth0, const Dept
 						float d = (pTransInput - pTarget).length();
 						float dNormal = nTransInput | nTarget;
 						if (dNormal >= normalThresh && d <= distThresh) {
-							return true;
+							count++;
+							if (count >= 10) return true;
 						}
 					} // projected to valid depth
 				} // inside image
