@@ -14,6 +14,7 @@ int main(int argc, char* argv[])
 	try {
 		std::srand(0);
 
+		const float maxDepth = 6.0f;
 		const size_t numFramePairsToSample = 100;
 		const size_t maxNumSampleTries = 10000;
 		//const std::string dataPath = "W:/data/matterport/v1_converted/";
@@ -61,7 +62,7 @@ int main(int argc, char* argv[])
 
 			//load sens
 			ScannedScene scene(dataPath + scenes[i], scenes[i]);
-			ReprojError e = scene.computeReprojection(numFramePairsToSample, maxNumSampleTries);
+			ReprojError e = scene.computeReprojection(numFramePairsToSample, maxNumSampleTries, maxDepth);
 			errors[i] = e;
 			if (e.numCorrs > 0) {
 				s << scenes[i] << splitter << e.numCorrs << splitter << e.depthL1 << splitter << e.depthL2 << splitter << e.intensityL1 << splitter << e.intensityGradL1 << std::endl;

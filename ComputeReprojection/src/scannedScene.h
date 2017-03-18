@@ -76,7 +76,7 @@ public:
 		}
 	}
 
-	ReprojError computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries);
+	ReprojError computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth);
 
 
 private:
@@ -90,7 +90,7 @@ class Reprojection {
 public:
 	static ReprojError computeReprojection(const DepthImage32& depth0, const ColorImageR32& intensity0,
 		const DepthImage32& depth1, const ColorImageR32& intensity1, const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1,
-		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1);
+		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1, float maxDepth);
 
 	static vec3f computeNormal(const DepthImage32& depth, const mat4f& intrinsicsInv, unsigned int x, unsigned int y)
 	{
@@ -127,22 +127,20 @@ public:
 		return vec2f(p.x / p.z, p.y / p.z);
 	}
 
-	static vec3f cameraToKinectProj(const vec3f& pos, const mat4f& intrinsics, unsigned int width, unsigned int height)	{
-		vec2f proj = cameraToDepth(intrinsics, pos);
-
-		vec3f pImage = vec3f(proj.x, proj.y, pos.z);
-
-		pImage.x = (2.0f*pImage.x - (width - 1.0f)) / (height - 1.0f);
-		pImage.y = ((height - 1.0f) - 2.0f*pImage.y) / (height - 1.0f);
-		pImage.z = (pImage.z - 0.4f) / (6.0f - 0.4f);
-		return pImage;
-	}
+	//static vec3f cameraToKinectProj(const vec3f& pos, const mat4f& intrinsics, unsigned int width, unsigned int height, float maxDepth)	{
+	//	vec2f proj = cameraToDepth(intrinsics, pos);
+	//	vec3f pImage = vec3f(proj.x, proj.y, pos.z);
+	//	pImage.x = (2.0f*pImage.x - (width - 1.0f)) / (height - 1.0f);
+	//	pImage.y = ((height - 1.0f) - 2.0f*pImage.y) / (height - 1.0f);
+	//	pImage.z = (pImage.z - 0.4f) / (maxDepth - 0.4f);
+	//	return pImage;
+	//}
 
 	static bool hasCameraFrustumIntersection(const mat4f& t0, const mat4f& intrinsics0, const mat4f& t1, const mat4f& intrinsics1,
-		unsigned int width, unsigned int height)
+		unsigned int width, unsigned int height, float maxDepth)
 	{
 		const float cameraDist = vec3f::dist(t0.getTranslation(), t1.getTranslation());
-		if (cameraDist > 6.0f) 
+		if (cameraDist > 6.0f) //maxDepth) 
 			return false;
 		const vec3f d0 = t0.getRotation() * vec3f(1.0f, 1.0f, 1.0f).getNormalized();
 		const vec3f d1 = t1.getRotation() * vec3f(1.0f, 1.0f, 1.0f).getNormalized();
@@ -151,7 +149,6 @@ public:
 			return false;
 
 		const float minDepth = 0.4f;
-		const float maxDepth = 4.0f; //! todo
 
 		const vec2f imgMin(0.0f); const vec2f imgMax((float)width, (float)height);
 		std::vector<vec3f> corners(4);
@@ -184,6 +181,6 @@ public:
 
 	static bool checkValidReprojection(const DepthImage32& depth0, const DepthImage32& depth1,
 		const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1, 
-		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1,const mat4f& transform0to1);
+		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1,const mat4f& transform0to1, float maxDepth);
 private:
 };

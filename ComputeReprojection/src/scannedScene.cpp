@@ -18,7 +18,7 @@ struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
 	}
 };
 
-ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries)
+ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth)
 {
 	size_t numFramesPerSens = m_sds.front()->m_frames.size();
 	size_t numFrames = numFramesPerSens * m_sds.size();
@@ -57,13 +57,13 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		const mat4f depthIntrinsics1 = m_sds[sensFrameIdx1.x]->m_calibrationDepth.m_intrinsic;
 		const mat4f depthIntrinsicsInv1 = m_sds[sensFrameIdx1.x]->m_calibrationDepth.m_intrinsic.getInverse();
 		//see if there is any potential overlap between the frames
-		if (!Reprojection::hasCameraFrustumIntersection(t0, depthIntrinsics0, t1, depthIntrinsics1, width, height))
+		if (!Reprojection::hasCameraFrustumIntersection(t0, depthIntrinsics0, t1, depthIntrinsics1, width, height, maxDepth))
 			continue; //no intersection
 
 		DepthImage32 depth0 = m_sds[sensFrameIdx0.x]->computeDepthImage(sensFrameIdx0.y);
 		DepthImage32 depth1 = m_sds[sensFrameIdx1.x]->computeDepthImage(sensFrameIdx1.y);
 
-		if (!Reprojection::checkValidReprojection(depth0, depth1, depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1))
+		if (!Reprojection::checkValidReprojection(depth0, depth1, depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1, maxDepth))
 			continue; //no valid projections
 
 		ColorImageR32 intensity0, intensity1;
@@ -98,10 +98,10 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		{
 			std::vector<vec3f> frustumPoints; //everything in camera space
 			frustumPoints.push_back(vec3f::origin);
-			frustumPoints.push_back(depthIntrinsicsInv0 * (6.0f * vec3f(0, 0, 1.0f)));
-			frustumPoints.push_back(depthIntrinsicsInv0 * (6.0f * vec3f(width - 1.0f, 0, 1.0f)));
-			frustumPoints.push_back(depthIntrinsicsInv0 * (6.0f * vec3f(width - 1.0f, height - 1.0f, 1.0f)));
-			frustumPoints.push_back(depthIntrinsicsInv0 * (6.0f * vec3f(0, height - 1.0f, 1.0f)));
+			frustumPoints.push_back(depthIntrinsicsInv0 * (maxDepth * vec3f(0, 0, 1.0f)));
+			frustumPoints.push_back(depthIntrinsicsInv0 * (maxDepth * vec3f(width - 1.0f, 0, 1.0f)));
+			frustumPoints.push_back(depthIntrinsicsInv0 * (maxDepth * vec3f(width - 1.0f, height - 1.0f, 1.0f)));
+			frustumPoints.push_back(depthIntrinsicsInv0 * (maxDepth * vec3f(0, height - 1.0f, 1.0f)));
 
 			MeshDataf f0, f1;
 			f0.merge(Shapesf::cylinder(t0 * frustumPoints[0], t0 * frustumPoints[1], 0.02f, 10, 10).computeMeshData());
@@ -127,7 +127,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		ImageHelper::gaussFilter(intensity1, 2.0f);
 
 		ReprojError e = Reprojection::computeReprojection(depth0, intensity0, depth1, intensity1, 
-			depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1);
+			depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1, maxDepth);
 		if (e.numCorrs == 0) 
 			continue; // no intersection
 		err += e;
@@ -142,14 +142,14 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const ColorImageR32& intensity0, 
 	const DepthImage32& depth1, const ColorImageR32& intensity1, 
 	const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1, 
-	const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1)
+	const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1, float maxDepth)
 {
 	const unsigned int subsampleFactor = (depth0.getWidth() == 640) ? 8 : 16; //todo fix hack
 	const float normalThresh = 0.95f;
 	const float distThresh = 0.15f;
 	const float colorThresh = 0.1f;
 	const float depthMin = 0.4f;
-	const float depthMax = 6.0f;
+	const float depthMax = maxDepth;
 	const float INVALID = -std::numeric_limits<float>::infinity();
 
 	ColorImageR32 gradmag0 = ImageHelper::computeGradientMagnitude(intensity0);
@@ -233,13 +233,13 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 }
 
 bool Reprojection::checkValidReprojection(const DepthImage32& depth0, const DepthImage32& depth1, const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1,
-	const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1)
+	const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1, float maxDepth)
 {
 	const unsigned int subsampleFactor = depth0.getWidth() == 640 ? 16 : 32; //todo fix hack
 	const float normalThresh = 0.9f;
 	const float distThresh = 0.2f;
 	const float depthMin = 0.4f;
-	const float depthMax = 6.0f;
+	const float depthMax = maxDepth;
 	const float INVALID = -std::numeric_limits<float>::infinity();
 
 #pragma omp parallel for
