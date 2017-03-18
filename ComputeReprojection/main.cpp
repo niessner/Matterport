@@ -17,18 +17,18 @@ int main(int argc, char* argv[])
 		const float maxDepth = 6.0f;
 		const size_t numFramePairsToSample = 100;
 		const size_t maxNumSampleTries = 10000;
-		//const std::string dataPath = "W:/data/matterport/v1_converted/";
-		//const std::vector<std::string> sceneFileLists = {
-		//	"//tirion/share/datasets/Matterport/Matching1/scenes_trainval.txt",
-		//	"//tirion/share/datasets/Matterport/Matching1/scenes_test.txt"
-		//};
-		const std::string dataPath = "W:/data/scan-net/scans/checked/";
+		const std::string dataPath = "W:/data/matterport/v1_converted/";
 		const std::vector<std::string> sceneFileLists = {
-			"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-0.txt",
-			"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-1.txt",
-			"E:/Work/scanner-ipad/Tasks/benchmark/checked_val.txt",
-			"E:/Work/scanner-ipad/Tasks/benchmark/checked_test.txt"
+			"//tirion/share/datasets/Matterport/Matching1/scenes_trainval.txt",
+			"//tirion/share/datasets/Matterport/Matching1/scenes_test.txt"
 		};
+		//const std::string dataPath = "W:/data/scan-net/scans/checked/";
+		//const std::vector<std::string> sceneFileLists = {
+		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-0.txt",
+		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-1.txt",
+		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_val.txt",
+		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_test.txt"
+		//};
 		const std::string logFile = "log.csv";
 		unsigned int maxNumScenes = 0;
 
@@ -47,7 +47,8 @@ int main(int argc, char* argv[])
 			s.close();
 		}
 		
-		if (maxNumScenes != 0 && scenes.size() < maxNumScenes) maxNumScenes = (unsigned int)scenes.size();
+		if (maxNumScenes == 0 || scenes.size() < maxNumScenes) maxNumScenes = (unsigned int)scenes.size();
+		std::cout << maxNumScenes << " scenes" << std::endl;
 		std::vector<ReprojError> errors(maxNumScenes);
 
 		ReprojError total;
