@@ -66,7 +66,7 @@ public:
 		auto& files = dir.getFilesWithSuffix(".sens");
 		std::sort(files.begin(), files.end());
 
-		//for (auto& f : files) {
+		std::cout << name << std::endl;
 		for (size_t i = 0; i < files.size(); i++) {
 			auto& f = files[i];
 			m_sds.push_back(new SensorData);

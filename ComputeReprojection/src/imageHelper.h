@@ -45,7 +45,9 @@ public:
 		res.setInvalidValue(img.getInvalidValue());
 
 		const int kernelRadius = (int)ceil(2.0*sigmaD);
-		for (unsigned int y = 0; y < img.getHeight(); y++) {
+#pragma omp parallel for
+		for (int _y = 0; _y < (int)img.getHeight(); _y++) {
+			unsigned int y = (unsigned int)_y;
 			for (unsigned int x = 0; x < img.getWidth(); x++) {
 
 				res.setInvalid(x, y);
@@ -80,7 +82,9 @@ public:
 		res.setInvalidValue(d.getInvalidValue());
 
 		const int kernelRadius = (int)ceil(2.0*sigmaD);
-		for (unsigned int y = 0; y < d.getHeight(); y++) {
+#pragma omp parallel for
+		for (int _y = 0; _y < (int)d.getHeight(); _y++) {
+			unsigned int y = (unsigned int)_y;
 			for (unsigned int x = 0; x < d.getWidth(); x++) {
 				res.setInvalid(x, y);
 
@@ -142,7 +146,9 @@ public:
 		res.setPixels(res.getInvalidValue());
 		const auto invalid = image.getInvalidValue();
 
-		for (unsigned int y = 0; y < image.getHeight(); y++) {
+#pragma omp parallel for
+		for (int _y = 0; _y < (int)image.getHeight(); _y++) {
+			unsigned int y = (unsigned int)_y;
 			for (unsigned int x = 0; x < image.getWidth(); x++) {
 				if (x > 0 && x < image.getWidth() - 1 && y > 0 && y < image.getHeight() - 1) {
 					float pos00 = image(x - 1, y - 1);	if (pos00 == invalid) continue;
@@ -170,6 +176,23 @@ public:
 			}
 		}
 		return res;
+	}
+
+	static void computeImageStatistics(const BaseImage<float>& image)
+	{
+		float min = std::numeric_limits<float>::infinity(), max = -std::numeric_limits<float>::infinity();
+		float mean = 0.0f; unsigned int count = 0;
+		for (const auto& p : image) {
+			if (p.value != image.getInvalidValue()) {
+				if (p.value < min) min = p.value;
+				if (p.value > max) max = p.value;
+				mean += p.value;
+				count++;
+			}
+		}
+		mean /= count;
+		std::cout << "image range [" << min << ", " << max << "]" << std::endl;
+		std::cout << "mean value = " << mean << " (" << count << "/" << image.getNumPixels() << " valid pixels)" << std::endl;
 	}
 
 private:

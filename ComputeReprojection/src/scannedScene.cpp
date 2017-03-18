@@ -4,6 +4,8 @@
 #include "scannedScene.h"
 #include "imageHelper.h"
 
+//#define DEBUG_IMAGES
+
 template<>
 struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
 	size_t operator()(const vec2ui& v) const {
@@ -32,7 +34,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 	std::unordered_set<vec2ui> framePairs;
 	size_t numTries = 0;
 	unsigned int numFound = 0;
-	while (framePairs.size() < maxNumFramePairSamples && numTries < maxNumSampleTries) {
+	while (numFound < maxNumFramePairSamples && numTries < maxNumSampleTries) {
 		numTries++;
 		const unsigned int f0 = math::randomUniform(0u, (unsigned int)numFrames - 1);
 		const unsigned int f1 = math::randomUniform(0u, (unsigned int)numFrames - 1);
@@ -77,7 +79,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 			intensity1 = ImageHelper::convertToGrayscale(color1);
 		}
 
-		//debugging
+#ifdef DEBUG_IMAGES
 		FreeImageWrapper::saveImage("depth0.png", ColorImageR32G32B32(depth0));
 		FreeImageWrapper::saveImage("depth1.png", ColorImageR32G32B32(depth1));
 		FreeImageWrapper::saveImage("intensity0.png", intensity0);
@@ -117,7 +119,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		}
 		std::cout << "found potential overlap" << std::endl;
 		getchar();
-		//debugging
+#endif
 
 		ImageHelper::bilateralFilter(depth0, 2.0f, 0.05f);
 		ImageHelper::bilateralFilter(depth1, 2.0f, 0.05f);
@@ -128,9 +130,12 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 			depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1);
 		if (e.numCorrs == 0) 
 			continue; // no intersection
+		err += e;
 		numFound++;
+		std::cout << "\rfound " << numFound << " (" << numTries << " attempts)";
 	}
-	if (numTries == maxNumSampleTries) std::cout << "exhausted #tries, found " << framePairs.size() << " frame pairs" << std::endl;
+	if (numTries == maxNumSampleTries) std::cout << "\rexhausted #tries, found " << numFound << " frame pairs" << std::endl;
+	else std::cout << "\rfound " << numFound << " frame pairs in " << numTries << " tries" << std::endl;
 	return err;
 }
 
@@ -139,8 +144,8 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 	const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1, 
 	const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1)
 {
-	const unsigned int subsampleFactor = depth0.getWidth() == 640 ? 8 : 16; //todo fix hack
-	const float normalThresh = 0.97f;
+	const unsigned int subsampleFactor = (depth0.getWidth() == 640) ? 8 : 16; //todo fix hack
+	const float normalThresh = 0.95f;
 	const float distThresh = 0.15f;
 	const float colorThresh = 0.1f;
 	const float depthMin = 0.4f;
@@ -150,12 +155,17 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 	ColorImageR32 gradmag0 = ImageHelper::computeGradientMagnitude(intensity0);
 	ColorImageR32 gradmag1 = ImageHelper::computeGradientMagnitude(intensity1);
 
-	ColorImageR32 debug(depth0.getWidth()/subsampleFactor, depth0.getHeight()/subsampleFactor);
+#ifdef DEBUG_IMAGES
+	ImageHelper::computeImageStatistics(gradmag0);
+	ImageHelper::computeImageStatistics(gradmag1);
+	DepthImage32 debug(depth0.getWidth()/subsampleFactor, depth0.getHeight()/subsampleFactor);
 	debug.setInvalidValue(INVALID); debug.setPixels(INVALID);
 	PointCloudf pc0trans, pc1;
-
+#endif
 	ReprojError err;
-	for (unsigned int y = 0; y < depth0.getHeight(); y+=subsampleFactor) {
+#pragma omp parallel for
+	for (int _y = 0; _y < (int)depth0.getHeight(); _y+=subsampleFactor) {
+		unsigned int y = (unsigned int)_y;
 		for (unsigned int x = 0; x < depth0.getWidth(); x+=subsampleFactor) {
 			const float d0 = depth0(x, y);
 			const vec3f p0 = computeCameraSpacePosition(depth0, depthIntrinsicsInv0, x, y);
@@ -167,9 +177,10 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 				const vec3f nTransInput = transform0to1.getRotation() * n0;
 				vec2f screenPosf = cameraToDepth(depthIntrinsics1, pTransInput);
 				vec2i screenPos = math::round(screenPosf);
-
+#ifdef DEBUG_IMAGES
 				pc0trans.m_points.push_back(pTransInput);
 				pc0trans.m_colors.push_back(vec4f(cInput, cInput, cInput, 1.0f));
+#endif
 				if (screenPos.x >= 0 && screenPos.y >= 0 && screenPos.x < (int)depth0.getWidth() && screenPos.y < (int)depth0.getHeight()) {
 					const float dTarget = depth1(screenPos.x, screenPos.y);
 					const vec3f pTarget = computeCameraSpacePosition(depth1, depthIntrinsicsInv1, screenPos.x, screenPos.y);
@@ -181,20 +192,20 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 						float d = (pTransInput - pTarget).length();
 						float dNormal = nTransInput | nTarget;
 						float g = std::fabs(gInput - gTarget);
-
+#ifdef DEBUG_IMAGES
 						pc1.m_points.push_back(pTarget);
 						pc1.m_colors.push_back(vec4f(cTarget, cTarget, cTarget, 1.0f));
-						if (dNormal >= normalThresh && d <= distThresh && g <= colorThresh) { 
+#endif
+						if (dNormal >= normalThresh && d <= distThresh /*&& g <= colorThresh*/) { 
 							//const float weight = std::max(0.0f, 0.5f*((1.0f - d / distThresh) + (1.0f - cameraToKinectProjZ(pTransInput.z, depthMin, depthMax)))); // for weighted ICP;
-
 							err.numCorrs++;
 							err.depthL1 += std::fabs(pTransInput.z - dTarget); //l1 between projected depth and depth
 							err.depthL2 += d;	//residual
 							err.intensityL1 += std::fabs(cInput - cTarget);
 							err.intensityGradL1 += std::fabs(g);
-							//debugging
+#ifdef DEBUG_IMAGES
 							debug(x/subsampleFactor, y/subsampleFactor) = d;
-							//debugging
+#endif
 						}
 					} // projected to valid depth
 				} // inside image
@@ -202,11 +213,12 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 		} // x
 	} // y
 
+#ifdef DEBUG_IMAGES
 	FreeImageWrapper::saveImage("gradmag0.png", gradmag0);
 	FreeImageWrapper::saveImage("gradmag1.png", gradmag1);
 	PointCloudIOf::saveToFile("pc0trans.ply", pc0trans);
 	PointCloudIOf::saveToFile("pc1.ply", pc1);
-	FreeImageWrapper::saveImage("corr.png", debug);
+	FreeImageWrapper::saveImage("corr.png", ColorImageR32G32B32(debug));
 	std::cout << "computed corrs" << std::endl;
 	std::cout << "\t#corrs = " << err.numCorrs << std::endl;
 	if (err.numCorrs > 0) {
@@ -216,6 +228,7 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 		std::cout << "\tintensity grad l1 = " << err.intensityGradL1 << std::endl;
 	}
 	getchar();
+#endif
 	return err;
 }
 
@@ -229,7 +242,9 @@ bool Reprojection::checkValidReprojection(const DepthImage32& depth0, const Dept
 	const float depthMax = 6.0f;
 	const float INVALID = -std::numeric_limits<float>::infinity();
 
-	for (unsigned int y = 0; y < depth0.getHeight(); y += subsampleFactor) {
+#pragma omp parallel for
+	for (int _y = 0; _y < (int)depth0.getHeight(); _y += subsampleFactor) {
+		unsigned int y = (unsigned int)_y;
 		for (unsigned int x = 0; x < depth0.getWidth(); x += subsampleFactor) {
 			const float d0 = depth0(x, y);
 			const vec3f p0 = computeCameraSpacePosition(depth0, depthIntrinsicsInv0, x, y);
