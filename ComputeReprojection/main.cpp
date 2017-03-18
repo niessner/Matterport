@@ -16,19 +16,23 @@ int main(int argc, char* argv[])
 
 		const float maxDepth = 6.0f;
 		const size_t numFramePairsToSample = 100;
-		const size_t maxNumSampleTries = 10000;
+#ifndef FIND_FAR_CAMERAS
 		const std::string dataPath = "W:/data/matterport/v1_converted/";
 		const std::vector<std::string> sceneFileLists = {
 			"//tirion/share/datasets/Matterport/Matching1/scenes_trainval.txt",
 			"//tirion/share/datasets/Matterport/Matching1/scenes_test.txt"
 		};
-		//const std::string dataPath = "W:/data/scan-net/scans/checked/";
-		//const std::vector<std::string> sceneFileLists = {
-		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-0.txt",
-		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-1.txt",
-		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_val.txt",
-		//	"E:/Work/scanner-ipad/Tasks/benchmark/checked_test.txt"
-		//};
+		const size_t maxNumSampleTries = 10000;
+#else
+		const std::string dataPath = "W:/data/scan-net/scans/checked/";
+		const std::vector<std::string> sceneFileLists = {
+			"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-0.txt",
+			"E:/Work/scanner-ipad/Tasks/benchmark/checked_train-1.txt",
+			"E:/Work/scanner-ipad/Tasks/benchmark/checked_val.txt",
+			"E:/Work/scanner-ipad/Tasks/benchmark/checked_test.txt"
+		};
+		const size_t maxNumSampleTries = 100000;
+#endif
 		const std::string logFile = "log.csv";
 		unsigned int maxNumScenes = 0;
 
@@ -46,10 +50,12 @@ int main(int argc, char* argv[])
 				scenes.push_back(line);
 			s.close();
 		}
+		//scenes = { "ScanNet-2016-07-25_11-39-46" };//debugging (small scene)
 		
 		if (maxNumScenes == 0 || scenes.size() < maxNumScenes) maxNumScenes = (unsigned int)scenes.size();
 		std::cout << maxNumScenes << " scenes" << std::endl;
 		std::vector<ReprojError> errors(maxNumScenes);
+		std::vector< std::vector<float> > sampledCameraDists(maxNumScenes);
 
 		ReprojError total;
 		std::ofstream s(logFile); const std::string splitter = ",";
@@ -63,7 +69,7 @@ int main(int argc, char* argv[])
 
 			//load sens
 			ScannedScene scene(dataPath + scenes[i], scenes[i]);
-			ReprojError e = scene.computeReprojection(numFramePairsToSample, maxNumSampleTries, maxDepth);
+			ReprojError e = scene.computeReprojection(numFramePairsToSample, maxNumSampleTries, maxDepth, sampledCameraDists[i]);
 			errors[i] = e;
 			if (e.numCorrs > 0) {
 				s << scenes[i] << splitter << e.numCorrs << splitter << e.depthL1 << splitter << e.depthL2 << splitter << e.intensityL1 << splitter << e.intensityGradL1 << std::endl;
@@ -77,6 +83,14 @@ int main(int argc, char* argv[])
 		total.normalize();
 		s << "TOTAL NORM" << splitter << splitter << total.depthL1 << splitter << total.depthL2 << splitter << total.intensityL1 << splitter << total.intensityGradL1 << std::endl;
 		s.close();
+		{ //cameras
+			std::ofstream ofs("cameras.csv");
+			ofs << "scene,camera distance" << std::endl;
+			for (unsigned int i = 0; i < maxNumScenes; i++)
+				for (unsigned int j = 0; j < sampledCameraDists[i].size(); j++)
+					ofs << scenes[i] << "," << sampledCameraDists[i][j] << std::endl;
+			ofs.close();
+		}
 		
 		std::cout << "TOTAL NORM:" << std::endl;
 		std::cout << "orig #corrs = " << total.numCorrs << std::endl;

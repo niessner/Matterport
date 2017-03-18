@@ -4,7 +4,8 @@
 #include "scannedScene.h"
 #include "imageHelper.h"
 
-//#define DEBUG_IMAGES
+//#define DEBUG_IMAGES_POTENTIAL
+//#define DEBUG_IMAGES_REPROJ
 
 template<>
 struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
@@ -18,7 +19,7 @@ struct std::hash<vec2ui> : public std::unary_function < vec2ui, size_t > {
 	}
 };
 
-ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth)
+ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth, std::vector<float>& sampledCameraDists)
 {
 	size_t numFramesPerSens = m_sds.front()->m_frames.size();
 	size_t numFrames = numFramesPerSens * m_sds.size();
@@ -30,14 +31,54 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 	const unsigned int width = m_sds.front()->m_depthWidth;
 	const unsigned int height = m_sds.front()->m_depthHeight;
 
+#ifdef FIND_FAR_CAMERAS //doesn't actually enforce a distribution, just looks for far away cameras..
+	MLIB_ASSERT(m_sds.size() == 1); //only for scannet
+	const float avgCameraDist = 2.62f; const float stdCameraDist = 1.52f;
+	std::vector< std::pair<vec2ui, float> > framePairCameraDists;
+	for (unsigned int i = 0; i < numFrames; i++) {
+		const mat4f& t0 = m_sds[0]->m_frames[i].getCameraToWorld();
+		if (t0[0] == -std::numeric_limits<float>::infinity()) continue;
+		for (unsigned int j = i + 1; j < numFrames; j++) {
+			const mat4f& t1 = m_sds[0]->m_frames[j].getCameraToWorld();
+			if (t1[0] == -std::numeric_limits<float>::infinity()) continue;
+			const float dist =  vec3f::dist(t0.getTranslation(), t1.getTranslation());
+			if (dist < 6.0f)
+				framePairCameraDists.push_back(std::make_pair(vec2ui(i, j), dist));
+		}
+	}
+	std::sort(framePairCameraDists.begin(), framePairCameraDists.end(), [](const std::pair<vec2ui, float> &left, const std::pair<vec2ui, float> &right) {
+		return fabs(left.second) > fabs(right.second); //sort largest camera dist first
+	});
+	unsigned int curFramePairIdx = 0;
+	unsigned int skip = 1;
+	if (numFrames > 2000 && numFrames < 3000) skip = 100;
+	else if (numFrames > 3000) skip = 200;
+#endif
+
 	ReprojError err;
-	std::unordered_set<vec2ui> framePairs;
+	std::unordered_set<vec2ui> framePairs; 
 	size_t numTries = 0;
 	unsigned int numFound = 0;
 	while (numFound < maxNumFramePairSamples && numTries < maxNumSampleTries) {
 		numTries++;
+#ifdef FIND_FAR_CAMERAS
+		if (numFound == 0 && numTries % 1000 == 0) std::cout << "\rtry " << numTries;
+		const unsigned int f0 = framePairCameraDists[curFramePairIdx].first.x;
+		const unsigned int f1 = framePairCameraDists[curFramePairIdx].first.y;
+		curFramePairIdx+=skip;
+		if (curFramePairIdx >= framePairCameraDists.size()) {
+			std::cout << "exhausted all frame pair cameras (" << framePairCameraDists.size() << ") in " << numTries << " tries" << std::endl;
+			break;
+		}
+		//if (maxNumFramePairSamples - numFound < framePairCameraDists.size()-curFramePairIdx) { //can still reject while maintaining requested #samples
+		//	//if (!sampledCameraDists.empty()) {
+		//	//	const float curAvgCameraDist = std::accumulate(sampledCameraDists.begin(), sampledCameraDists.end())
+		//	//}
+		//}
+#else
 		const unsigned int f0 = math::randomUniform(0u, (unsigned int)numFrames - 1);
 		const unsigned int f1 = math::randomUniform(0u, (unsigned int)numFrames - 1);
+#endif
 		const vec2ui frames = f0 < f1 ? vec2ui(f0, f1) : vec2ui(f1, f0);
 		if (f0 == f1 || framePairs.find(frames) != framePairs.end()) continue; //not a valid sample
 		framePairs.insert(frames);
@@ -51,6 +92,8 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		}
 		const mat4f& t0 = m_sds[sensFrameIdx0.x]->m_frames[sensFrameIdx0.y].getCameraToWorld();
 		const mat4f& t1 = m_sds[sensFrameIdx1.x]->m_frames[sensFrameIdx1.y].getCameraToWorld();
+		if (t0[0] == -std::numeric_limits<float>::infinity() || t1[0] == -std::numeric_limits<float>::infinity()) 
+			continue;
 		const mat4f transform0to1 = t1.getInverse() * t0;
 		const mat4f depthIntrinsics0 = m_sds[sensFrameIdx0.x]->m_calibrationDepth.m_intrinsic;
 		const mat4f depthIntrinsicsInv0 = m_sds[sensFrameIdx0.x]->m_calibrationDepth.m_intrinsic.getInverse();
@@ -70,7 +113,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 		{
 			ColorImageR8G8B8 color0 = m_sds[sensFrameIdx0.x]->computeColorImage(sensFrameIdx0.y);
 			ColorImageR8G8B8 color1 = m_sds[sensFrameIdx1.x]->computeColorImage(sensFrameIdx1.y);
-			MLIB_ASSERT((float)color0.getWidth() / depth0.getWidth() == (float)color0.getHeight() / depth0.getHeight());
+			//MLIB_ASSERT((float)color0.getWidth() / depth0.getWidth() == (float)color0.getHeight() / depth0.getHeight());
 			if (color0.getWidth() != depth0.getWidth()) { //assumes extrinsics == identity
 				color0.resize(depth0.getWidth(), depth0.getHeight());
 				color1.resize(depth1.getWidth(), depth1.getHeight());
@@ -79,7 +122,7 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 			intensity1 = ImageHelper::convertToGrayscale(color1);
 		}
 
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_POTENTIAL
 		FreeImageWrapper::saveImage("depth0.png", ColorImageR32G32B32(depth0));
 		FreeImageWrapper::saveImage("depth1.png", ColorImageR32G32B32(depth1));
 		FreeImageWrapper::saveImage("intensity0.png", intensity0);
@@ -128,8 +171,36 @@ ReprojError ScannedScene::computeReprojection(size_t maxNumFramePairSamples, siz
 
 		ReprojError e = Reprojection::computeReprojection(depth0, intensity0, depth1, intensity1, 
 			depthIntrinsics0, depthIntrinsics1, depthIntrinsicsInv0, depthIntrinsicsInv1, transform0to1, maxDepth);
-		if (e.numCorrs == 0) 
+		if (e.numCorrs < 100) //== 0) 
 			continue; // no intersection
+		////debugging
+		//const bool first = !util::fileExists("cameras.csv");
+		//std::ofstream ofs("cameras.csv", std::ios::app);
+		//if (first) ofs << "attempt,camera distance,campos0,campos1" << std::endl;
+		//ofs << numFound << "," << vec3f::dist(t0.getTranslation(), t1.getTranslation()) << "," << t0.getTranslation() << "," << t1.getTranslation() << std::endl;
+		//ofs.close();
+		////debugging
+#ifdef FIND_FAR_CAMERAS
+		sampledCameraDists.push_back(vec3f::dist(t0.getTranslation(), t1.getTranslation()));
+		if (numFound == 0) {
+			framePairCameraDists.erase(framePairCameraDists.begin(), framePairCameraDists.begin() + curFramePairIdx);
+			float sum = 0.0f; unsigned int end = (unsigned int)framePairCameraDists.size();
+			for (unsigned int i = 0; i < framePairCameraDists.size(); i++) {
+				sum += framePairCameraDists[i].second;
+				if (i > maxNumFramePairSamples * 2) {
+					const float avg = sum / (float)i;
+					if (avg <= avgCameraDist) {
+						end = i;
+						break;
+					}
+				}
+			}
+			if (end < framePairCameraDists.size()) framePairCameraDists.erase(framePairCameraDists.begin() + end, framePairCameraDists.end());
+			std::random_shuffle(framePairCameraDists.begin(), framePairCameraDists.end());
+			curFramePairIdx = 0;
+			skip = 1;
+		}
+#endif
 		err += e;
 		numFound++;
 		std::cout << "\rfound " << numFound << " (" << numTries << " attempts)";
@@ -155,7 +226,7 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 	ColorImageR32 gradmag0 = ImageHelper::computeGradientMagnitude(intensity0);
 	ColorImageR32 gradmag1 = ImageHelper::computeGradientMagnitude(intensity1);
 
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_REPROJ
 	ImageHelper::computeImageStatistics(gradmag0);
 	ImageHelper::computeImageStatistics(gradmag1);
 	DepthImage32 debug(depth0.getWidth()/subsampleFactor, depth0.getHeight()/subsampleFactor);
@@ -177,7 +248,7 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 				const vec3f nTransInput = transform0to1.getRotation() * n0;
 				vec2f screenPosf = cameraToDepth(depthIntrinsics1, pTransInput);
 				vec2i screenPos = math::round(screenPosf);
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_REPROJ
 				pc0trans.m_points.push_back(pTransInput);
 				pc0trans.m_colors.push_back(vec4f(cInput, cInput, cInput, 1.0f));
 #endif
@@ -192,7 +263,7 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 						float d = (pTransInput - pTarget).length();
 						float dNormal = nTransInput | nTarget;
 						float g = std::fabs(gInput - gTarget);
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_REPROJ
 						pc1.m_points.push_back(pTarget);
 						pc1.m_colors.push_back(vec4f(cTarget, cTarget, cTarget, 1.0f));
 #endif
@@ -203,7 +274,7 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 							err.depthL2 += d;	//residual
 							err.intensityL1 += std::fabs(cInput - cTarget);
 							err.intensityGradL1 += std::fabs(g);
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_REPROJ
 							debug(x/subsampleFactor, y/subsampleFactor) = d;
 #endif
 						}
@@ -213,7 +284,11 @@ ReprojError Reprojection::computeReprojection(const DepthImage32& depth0, const 
 		} // x
 	} // y
 
-#ifdef DEBUG_IMAGES
+#ifdef DEBUG_IMAGES_REPROJ
+	FreeImageWrapper::saveImage("depth0.png", ColorImageR32G32B32(depth0));
+	FreeImageWrapper::saveImage("depth1.png", ColorImageR32G32B32(depth1));
+	FreeImageWrapper::saveImage("intensity0.png", intensity0);
+	FreeImageWrapper::saveImage("intensity1.png", intensity1);
 	FreeImageWrapper::saveImage("gradmag0.png", gradmag0);
 	FreeImageWrapper::saveImage("gradmag1.png", gradmag1);
 	PointCloudIOf::saveToFile("pc0trans.ply", pc0trans);

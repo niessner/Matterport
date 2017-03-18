@@ -3,6 +3,8 @@
 
 #include "mLibInclude.h"
 
+#define FIND_FAR_CAMERAS
+
 struct ReprojError {
 	size_t numCorrs;
 	float depthL1;
@@ -76,7 +78,7 @@ public:
 		}
 	}
 
-	ReprojError computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth);
+	ReprojError computeReprojection(size_t maxNumFramePairSamples, size_t maxNumSampleTries, float maxDepth, std::vector<float>& sampledCameraDists);
 
 
 private:
@@ -145,7 +147,7 @@ public:
 		const vec3f d0 = t0.getRotation() * vec3f(1.0f, 1.0f, 1.0f).getNormalized();
 		const vec3f d1 = t1.getRotation() * vec3f(1.0f, 1.0f, 1.0f).getNormalized();
 		const float cameraAngles = std::acos(math::clamp(d0 | d1, -1.0f, 1.0f));
-		if (cameraAngles > 2.0f) 
+		if (cameraAngles > 2.0f)
 			return false;
 
 		const float minDepth = 0.4f;
@@ -167,8 +169,8 @@ public:
 			i_in_j.include(ij);
 			j_in_i.include(ji);
 
-			ij = cameraToDepth(intrinsics1, t1_inv * t0 * intrinsicsInv0 * (maxDepth * corners[c]));
-			ji = cameraToDepth(intrinsics0, t0_inv * t1 * intrinsicsInv1 * (maxDepth * corners[c]));
+			ij = cameraToDepth(intrinsics1, t1_inv * t0 * intrinsicsInv0 * (4.0f * corners[c]));//(maxDepth * corners[c]));
+			ji = cameraToDepth(intrinsics0, t0_inv * t1 * intrinsicsInv1 * (4.0f * corners[c]));//(maxDepth * corners[c]));
 			i_in_j.include(ij);
 			j_in_i.include(ji);
 		}
@@ -180,7 +182,7 @@ public:
 	}
 
 	static bool checkValidReprojection(const DepthImage32& depth0, const DepthImage32& depth1,
-		const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1, 
-		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1,const mat4f& transform0to1, float maxDepth);
+		const mat4f& depthIntrinsics0, const mat4f& depthIntrinsics1,
+		const mat4f& depthIntrinsicsInv0, const mat4f& depthIntrinsicsInv1, const mat4f& transform0to1, float maxDepth);
 private:
 };
