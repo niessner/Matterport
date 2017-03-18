@@ -33,6 +33,6 @@ s_keyDetectHeight = 1024;
 //sun3d test set
 s_dataPath = "//tirion/share/datasets/Matterport/MatchingSun3d/";
 s_sceneFileList = "//tirion/share/datasets/Matterport/MatchingSun3d/scenes_test.txt";
-s_keyMatchSkip = 300;
+s_keyMatchSkip = 1;
 s_keyDetectWidth = 640;
 s_keyDetectHeight = 480;

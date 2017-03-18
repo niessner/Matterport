@@ -92,7 +92,7 @@ void Images::loadGTMatches(const std::string& filenamePos, const std::string& fi
 	const unsigned int imageHeight = m_images.front().front().getHeight();
 
 	std::vector<KeyPointMatch> poss, negs;
-	for (unsigned int i = 0; i < m_gtKeyPointMatchesPos.size(); i += 2) {
+	for (unsigned int i = 0; i < m_gtKeyPointMatchesPos.size(); i++) {
 		const auto& pos = m_gtKeyPointMatchesPos[i];
 		const auto& neg = m_gtKeyPointMatchesNeg[i];
 		MLIB_ASSERT(pos.m_kp0 == neg.m_kp0);
@@ -290,8 +290,8 @@ void Images::computePrecisionRecall(const std::vector<float> &matchDistsPos, con
 	}
 	float errAt95Recall = 0.0f; unsigned int norm = 0;
 	for (unsigned int i = 0; i < thresholds.size(); i++) {
-		//if (recall[i] > 0.949 && recall[i] < 0.951) {
-		if (recall[i] > 0.94 && recall[i] < 0.96) {
+		if (recall[i] > 0.949 && recall[i] < 0.951) {
+		//if (recall[i] > 0.94 && recall[i] < 0.96) {
 			errAt95Recall += rateFP[i];
 			norm++;
 		}
