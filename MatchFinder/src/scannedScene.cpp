@@ -15,12 +15,15 @@ void ScannedScene::findKeyPoints()
 	m_keyPoints.clear();
 	const float depthSigmaD = GAS::get().s_depthFilterSigmaD;
 	const float depthSigmaR = GAS::get().s_depthFilterSigmaR;
+	const unsigned int maxNumKeyPoints = GAS::get().s_maxNumKeysPerFrame;
+	const float minResponse = GAS::get().s_responseThresh;
 
 	for (size_t sensorIdx = 0; sensorIdx < m_sds.size(); sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
 		const mat4f intrinsicInv = sd->m_calibrationDepth.m_intrinsic.getInverse();
 
-		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+		for (size_t i = 0; i < m_frameIndices[sensorIdx].size(); i++) {
+			unsigned int imageIdx = m_frameIndices[sensorIdx][i];
 		//const std::vector<unsigned int> imageIndices = { 34, 1276 }; //debugging
 		//for (unsigned int imageIdx : imageIndices) { //debugging
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
@@ -64,18 +67,19 @@ void ScannedScene::findKeyPoints()
 
 			const mat4f& camToWorld = sd->m_frames[imageIdx].getCameraToWorld();
 
-			const unsigned int maxNumKeyPoints = 512;
-			const float minResponse = GAS::get().s_responseThresh;
 			std::vector<KeyPoint> rawKeyPoints = KeyPointFinder::findKeyPoints(vec2ui(sensorIdx, imageIdx), c, maxNumKeyPoints, minResponse);
 
 			//MeshDataf md;
 			size_t validKeyPoints = 0;
 			for (KeyPoint& rawkp : rawKeyPoints) {
 				const unsigned int padding = 50;	//don't take keypoints in the padding region of the image
-				vec2ui loc = math::round(rawkp.m_pixelPos);
-				if (dErode.isValid(loc) && dErode.isValidCoordinate(loc + padding) && dErode.isValidCoordinate(loc - padding)) {
+				const vec2ui loc = math::round(rawkp.m_pixelPos);
+				const vec2i dloc = math::round(vec2f((float)loc.x*(sd->m_depthWidth - 1) / (float)(sd->m_colorWidth - 1),
+					(float)loc.y*(sd->m_depthHeight - 1) / (float)(sd->m_colorHeight-1)));
+				const unsigned int dpad = std::round((float)padding*(sd->m_depthWidth - 1) / (float)(sd->m_colorWidth - 1));
+				if (dErode.isValid(dloc) && dErode.isValidCoordinate(dloc + dpad) && dErode.isValidCoordinate(dloc - dpad)) {
 					KeyPoint kp = rawkp;
-					kp.m_depth = d(loc);
+					kp.m_depth = d(dloc);
 					kp.m_imageIdx = (unsigned int)imageIdx;
 					kp.m_sensorIdx = (unsigned int)sensorIdx;
 					////kp.m_pixelPos = vec2f(rawkp.x, rawkp.y);
@@ -90,7 +94,7 @@ void ScannedScene::findKeyPoints()
 					const vec3f cameraPos = (intrinsicInv*vec4f(kp.m_pixelPos.x*kp.m_depth, kp.m_pixelPos.y*kp.m_depth, kp.m_depth, 0.0f)).getVec3();
 					kp.m_worldPos = camToWorld * cameraPos;
 
-					const vec3f normal = normalImage(loc); 
+					const vec3f normal = normalImage(dloc); 
 					if (normal.x == -std::numeric_limits<float>::infinity()) continue;
 					kp.m_worldNormal = (camToWorld.getRotation() * normal).getNormalized();
 
@@ -149,6 +153,7 @@ void ScannedScene::matchKeyPoints()
 {
 	const float radius = GAS::get().s_matchThresh;
 	const unsigned int maxK = 5;
+	const unsigned int maxNumMatchesPerScene = GAS::get().s_maxNumMatchesPerScene;
 
 	unsigned int currKeyPoint = 0;
 	std::vector<std::vector<NearestNeighborSearchFLANNf*>> nns(m_sds.size());
@@ -156,8 +161,8 @@ void ScannedScene::matchKeyPoints()
 	for (size_t sensorIdx = 0; sensorIdx < nns.size(); sensorIdx++) {
 		nns[sensorIdx].resize(m_sds[sensorIdx]->m_frames.size(), nullptr);
 		nn_offsets[sensorIdx].resize(m_sds[sensorIdx]->m_frames.size(), 0);
-		for (size_t frameIdx = 0; frameIdx < m_sds[sensorIdx]->m_frames.size(); frameIdx++) {
-
+		for (size_t i = 0; i < m_frameIndices[sensorIdx].size(); i++) {
+			const unsigned int frameIdx = m_frameIndices[sensorIdx][i];
 			nn_offsets[sensorIdx][frameIdx] = currKeyPoint;
 
 			std::vector<float> points;
@@ -189,11 +194,13 @@ void ScannedScene::matchKeyPoints()
 		const size_t frameIdx = kp.m_imageIdx;
 
 		for (size_t sensorIdx_dst = sensorIdx; sensorIdx_dst < nns.size(); sensorIdx_dst++) {
+			if (maxNumMatchesPerScene > 0 && m_keyPointMatches.size() > maxNumMatchesPerScene) break;
 
 			size_t frameIdx_dst = 0;
 			if (sensorIdx_dst == sensorIdx) frameIdx_dst = frameIdx + 1;
 
 			for (; frameIdx_dst < nns[sensorIdx].size(); frameIdx_dst++) {
+				if (maxNumMatchesPerScene > 0 && m_keyPointMatches.size() > maxNumMatchesPerScene) break;
 
 				auto* nn = nns[sensorIdx_dst][frameIdx_dst];
 				if (nn == nullptr) continue;
@@ -288,7 +295,8 @@ void ScannedScene::saveImages(const std::string& outPath) const
 	for (unsigned int sensorIdx = 0; sensorIdx < maxNumSensors; sensorIdx++) {
 		SensorData* sd = m_sds[sensorIdx];
 
-		for (size_t imageIdx = 0; imageIdx < sd->m_frames.size(); imageIdx++) {
+		for (size_t i = 0; i < m_frameIndices[sensorIdx].size(); i++) {
+			const unsigned int imageIdx = m_frameIndices[sensorIdx][i];
 			ColorImageR8G8B8 c = sd->computeColorImage(imageIdx);
 			c.resize(outWidth, outHeight);
 			//DepthImage32 d = sd->computeDepthImage(imageIdx);
@@ -448,10 +456,13 @@ void ScannedScene::debug()
 
 void ScannedScene::debugMatch() const
 {
-	const vec2ui im0(2, 200);
-	const vec2ui im1(2, 221);
-	const vec2ui loc0(338, 666);
-	const vec2ui loc1(755, 531);
+	const vec2ui im0(0, 8);
+	const vec2ui im1(1, 234);
+	const vec2ui loc0(801, 896);
+	const vec2ui loc1(546, 457);
+
+	const vec2ui imn(2, 141);
+	const vec2ui locn(994, 723);
 
 	//12200
 	//const vec2ui im0(0, 124);
@@ -487,6 +498,24 @@ void ScannedScene::debugMatch() const
 	MatchVisualization mv;
 	mv.visulizeMatches(m_sds, std::vector<KeyPointMatch>(1, m), 10, 1, true);
 	mv.visulizeMatches3D(m_sds, std::vector<KeyPointMatch>(1, m), 10);
+
+	ColorImageR8G8B8 ca = m_sds[im0.x]->computeColorImage(im0.y); ca.resize(640, 512);
+	ColorImageR8G8B8 cp = m_sds[im1.x]->computeColorImage(im1.y); cp.resize(640, 512);
+	ColorImageR8G8B8 cn = m_sds[imn.x]->computeColorImage(imn.y); cn.resize(640, 512);
+	const unsigned int dim = 65; const int radius = 32;
+	ColorImageR8G8B8 patchAnc(dim, dim);
+	ColorImageR8G8B8 patchPos(dim, dim);
+	ColorImageR8G8B8 patchNeg(dim, dim);
+	for (int y = -radius; y <= radius; y++) {
+		for (int x = -radius; x <= radius; x++) {
+			patchAnc(x + radius, y + radius) = ca(math::round(vec2f(loc0)*0.5f) + vec2i(x, y));
+			patchPos(x + radius, y + radius) = cp(math::round(vec2f(loc1)*0.5f) + vec2i(x, y));
+			patchNeg(x + radius, y + radius) = cn(math::round(vec2f(locn)*0.5f) + vec2i(x, y));
+		}
+	}
+	FreeImageWrapper::saveImage("patch_anc.png", patchAnc);
+	FreeImageWrapper::saveImage("patch_pos.png", patchPos);
+	FreeImageWrapper::saveImage("patch_neg.png", patchNeg);
 
 	//DepthImage32 de = d1; ImageHelper::erode(de, 2);
 	//FreeImageWrapper::saveImage("_depth.png", ColorImageR32G32B32(d1));

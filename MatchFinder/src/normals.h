@@ -19,7 +19,7 @@ public:
 		std::vector<DXGI_FORMAT> formats = {
 			DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT
 		};
-		m_renderTarget.load(*m_graphics, m_width, m_height, formats);
+		m_renderTarget.init(*m_graphics, m_width, m_height, formats);
 	}
 	~NormalExtractor() {
 		SAFE_DELETE(m_graphics);

@@ -22,7 +22,10 @@
 	X(float, s_depthFilterSigmaD) \
 	X(float, s_depthFilterSigmaR) \
 	X(float, s_renderDepthMin) \
-	X(float, s_renderDepthMax)
+	X(float, s_renderDepthMax) \
+	X(unsigned int, s_maxNumFramesPerScene) \
+	X(unsigned int, s_maxNumMatchesPerScene) \
+	X(unsigned int, s_maxNumKeysPerFrame)
 
 
 #ifndef VAR_NAME

@@ -1,18 +1,30 @@
 
 
-s_srcPath = "W:/data/matterport/v1_converted";
-s_outPath = "//tirion/share/datasets/Matterport/Matching1/";
+//s_srcPath = "W:/data/matterport/v1_converted";
+//s_outPath = "//tirion/share/datasets/Matterport/Matching1/";
+////output dimensions
+//s_outWidth = 640;
+//s_outHeight = 512;
+//s_maxNumFramesPerScene = 0;
+//s_maxNumMatchesPerScene = 0;
+//s_maxNumSensFiles = 3;
 
-
-//s_outPath = "W:/data/matterport/derived_data/";
+s_srcPath = "W:/data/scan-net/scans/checked/";
+s_outPath = "//tirion/share/datasets/Matterport/MatchingScanNet/";
+//output dimensions
+s_outWidth = 640;
+s_outHeight = 480;
+s_maxNumFramesPerScene = 500;
+s_maxNumMatchesPerScene = 1000;
+s_maxNumSensFiles = 1;
 
 
 s_matchThresh = 0.02f;		//in meters (accept matches within this threshold)
 s_responseThresh = 0.03f;	//response thresh to keep it as a meaningful 2D keypoint
 
 
+s_maxNumKeysPerFrame = 512;
 s_maxNumScenes = 0;
-s_maxNumSensFiles = 3;
 s_maxNumImages = 0;
 
 ////debug
@@ -21,9 +33,6 @@ s_maxNumImages = 0;
 //s_maxNumImages = 0;
 //s_outPath = "output/";
 
-//output dimensions
-s_outWidth = 640;
-s_outHeight = 512;
 
 s_depthFilterSigmaD = 2.0f;
 s_depthFilterSigmaR = 0.1f;

@@ -31,6 +31,10 @@ public:
 		auto& files = dir.getFilesWithSuffix(".sens");
 		std::sort(files.begin(), files.end());
 
+		//scannet debugging
+		if (files.size() > GAS::get().s_maxNumSensFiles)
+			throw MLIB_EXCEPTION("error too many sens files(" + std::to_string(files.size()) + "): " + name);
+
 		//for (auto& f : files) {
 		for (size_t i = 0; i < files.size(); i++) {
 			auto& f = files[i];
@@ -40,6 +44,24 @@ public:
 			std::cout << *sd << std::endl;
 
 			if (GAS::get().s_maxNumSensFiles > 0 && i + 1 >= GAS::get().s_maxNumSensFiles) break;
+		}
+
+		//frames to consider
+		m_frameIndices.clear();
+		for (unsigned int sensIdx = 0; sensIdx < m_sds.size(); sensIdx++) {
+			m_frameIndices.push_back(std::vector<unsigned int>(m_sds[sensIdx]->m_frames.size()));
+			for (unsigned int frameIdx = 0; frameIdx < m_sds[sensIdx]->m_frames.size(); frameIdx++)
+				m_frameIndices[sensIdx][frameIdx] = frameIdx;
+		}
+		const unsigned int maxNumFrames = GAS::get().s_maxNumFramesPerScene;
+		if (maxNumFrames > 0) {
+			const unsigned int maxNumFramesPerSens = maxNumFrames / (unsigned int)m_sds.size();
+			for (auto& frameIndices : m_frameIndices) {
+				if (frameIndices.size() > maxNumFramesPerSens) {
+					std::random_shuffle(frameIndices.begin(), frameIndices.end()); frameIndices.resize(maxNumFramesPerSens);
+					std::sort(frameIndices.begin(), frameIndices.end());
+				}
+			}
 		}
 	}
 
@@ -119,4 +141,7 @@ private:
 
 	//normals
 	std::vector<std::vector<PointImage>>	m_normals;
+
+	//limit set
+	std::vector<std::vector<unsigned int>> m_frameIndices;
 };
