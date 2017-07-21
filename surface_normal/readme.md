@@ -27,7 +27,10 @@ th main_train_matterport.lua -finetune -finetune_model ./model/train_example.t7 
 ```
 
 ## Evaluate
-In MATLAB, run evaluate_normal_mp('./result/sync_mp_matterport_test/','Path to root of matterport dataset')
+In MATLAB, run 
+```
+evaluate_normal_mp('./result/sync_mp_matterport_test/','Path to root of matterport dataset')
+```
 
 ## Data
 To train on synthetic image, you can find download the training data from http://pbrs.cs.princeton.edu. Specifically,
