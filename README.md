@@ -9,6 +9,10 @@ multi-exposure HDR images per panoramic sweep.
 This repository includes the raw data for the dataset plus derived data,annotated 
 data, and scripts/models for several scene understanding tasks.
 
+Downloading:
+------------
+You must indicate that you agree to the terms of use as specified in the dataset [license](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf) by sending an email to the mailing list at: `matterport3d@googlegroups.com`.  We will then provide download access to the dataset.
+
 File naming conventions:
 ---------------------
 The files are organized by camera, panorama, and yaw with the following naming convention:
