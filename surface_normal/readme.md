@@ -13,7 +13,7 @@ Run
 ```
 th main_test_matterport.lua -test_model ./model/sync_mp.t7
 ```
-and the result will be in [`./result/`](./result/).
+and the result will be in [`./result/`](./result/). The estimated normal will be saved in 16-bit PNG format, where 0-65535 in R,G,B channel correspond to [-1, 1] for the X,Y,Z component of the normal vector. We use the camera coordinates defined as - X points to the camera right, Y points to the camera forward, and Z points to the camera upward. For example, right facing wall are very red, floor are very blue, and you rarely see green as it's parallel to the camera viewing direction. 
 
 ## Training
 
@@ -31,9 +31,10 @@ In MATLAB, run
 ```
 evaluate_normal_mp('./result/sync_mp_matterport_test/','Path to root of matterport dataset')
 ```
+This function returns the pixelwise auglar loss on each testing image.
 
 ## Data
-To train on synthetic image, you can find download the training data from http://pbrs.cs.princeton.edu. Specifically,
+To train on synthetic image, you can find the training data from http://pbrs.cs.princeton.edu. Specifically,
 - `Color image`: http://pbrs.cs.princeton.edu/pbrs_release/data/mlt_v2.zip (278GB)
 - `Surface normal ground truth`: http://pbrs.cs.princeton.edu/pbrs_release/data/normal_v2.zip (27GB)
 - `Data list`: http://pbrs.cs.princeton.edu/pbrs_release/data/data_goodlist_v2.txt
