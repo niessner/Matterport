@@ -1,12 +1,8 @@
 # Matterport3D
 The Matterport3D V1.0 dataset contains data captured throughout 90 properties
-with a Matterport Pro Camera.   The camera consists of three Primesense Carmine
-depth and RGB sensors, oriented in down, middle, and up
-orientations, and placed on an eye-height tripod.  During capture, the camera around its vertical
-axis and stops at 60-degree intervals in order to capture 18
-multi-exposure HDR images per panoramic sweep.  
+with a Matterport Pro Camera.   
 
-This repository includes the raw data for the dataset plus derived data,annotated 
+This repository includes the raw data for the dataset plus derived data, annotated 
 data, and scripts/models for several scene understanding tasks.
 
 Downloading:
@@ -15,11 +11,20 @@ You must indicate that you agree to the terms of use as specified in the dataset
 
 File naming conventions:
 ---------------------
-The files are organized by camera, panorama, and yaw with the following naming convention:
+
+The Matterport Pro camera consists of three Primesense Carmine
+depth and RGB sensors placed on an eye-height tripod.   The
+three cameras (camera index 0-2) are oriented diagonally up, flat, and diagonally down,
+cumulativley covering most of the vertical field of view.
+During capture, the camera rotates 
+around its vertical axis and stops at 60-degree intervals (yaw index 0-5).
+So, for each tripod placement (panorama_uuid), a total of 18 
+images are captured.  Files associated with these images adhere to the 
+following naming convention:
 
 <panorama_uuid>_<prefix><camera_index>_<yaw_index>.<extension>
 
-where <panorama_uuid> is a unique string, <camera_index> is [0-5], and <yaw_index> is [0-2].  <prefix> is 'j' for HDR images, 'i' for tone-mapped color images, 'd' for depth images, "skybox" for skybox images, "pose" for camera pose files, and "intrinsics" for camera intrinsics files.  
+where <panorama_uuid> is a unique string, <camera_index> is [0-5], and <yaw_index> is [0-2].  <prefix> is 'j' for HDR images, 'i' for tone-mapped color images, 'd' for depth images, "skybox" for skybox images, "pose" for camera pose files, and "intrinsics" for camera intrinsics files.  The extension is ".jxr" for HDR images, ".jpg" for tone-mapped color images, and ".png" for depth and normal images.
 
 
 Data organization
@@ -240,6 +245,69 @@ In the fourth file (iiv), overlaps between image i and j are counted by looping 
 vertices of a mesh and counting the number of vertices visible in both images
 
   iiv - a vertex of a mesh visible at pixel i is also visible in image j
+
+
+cameras
+---------------------
+Camera extrinsics for manually chosen good view(s).
+
+    exterior.cam - manually chosen camera viewpoints to view houses from a bird's eye view
+
+Each .cam file has one line per camera with ascii numbers indicating the following camera parameters separated by spaces:
+
+    vx vy vz  tx ty tz  ux uy uz  xfov yfov 1
+
+where (vx, vy, vz) is the eye viewpoint of the camera, (tx, ty, tz) is the view direction, (ux, uy, uz) is the up direction, and xfov and yfov are the half-angles of the horizontal and vertical fields of view of the camera in radians (the angle from the central ray to the leftmost/bottommost ray in the field of view).
+
+houses
+---------------------
+A list of manually specified floor and room boundaries along with semantic room labels.
+
+Each .house file has a sequence of ascii lines with fields separated by spaces in the following format:
+
+    H name label #images #panoramas #vertices #surfaces #rooms #levels  0 0 0 0 0 0 0 0
+    L level_index #rooms label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+    R room_index level_index #panoramas #surfaces label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+    S surface_index room_index #vertices #surfaces label  px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi 0 0 0 0 0
+    V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
+    P name panorama_index room_index #images  px py pz  0 0 0 0 0
+    I name panorama_index panorama_index  px py pz  0 0 0 0 0
+   
+where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, and 0 is a value that can be ignored.   The extent of each room is defined by a prism with its vertical extent dictated by zlo and zhi as its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with the first surface assocated with the room.  
+
+The label of each room is a string with the following conventions:
+
+    'a' = bathroom (should have a toilet and a sink)
+    'b' = bedroom
+    'c' = closet
+    'd' = dining room (includes “breakfast rooms” other rooms people mainly eat in)
+    'e' = entryway/foyer/lobby (should be the front door, not any door)
+    'f' = familyroom (should be a room that a family hangs out in, not any area with couches)
+    'g' = garage
+    'h' = hallway
+    'i' = library (should be room like a library at a university, not an individual study)
+    'j' = laundryroom/mudroom (place where people do laundry, etc.)
+    'k' = kitchen
+    'l' = living room (should be the main “showcase” living room in a house, not any area with couches)
+    'm' = meetingroom/conferenceroom
+    'n' = lounge (any area where people relax in comfy chairs/couches that is not the family room or living room
+    'o' = office (usually for an individual, or a small set of people)
+    'p' = porch/terrace/deck/driveway (must be outdoors on ground level)
+    'r' = rec/game (should have recreational objects, like pool table, etc.)
+    's' = stairs
+    't' = toilet (should be a small room with ONLY a toilet)
+    'u' = utilityroom/toolroom 
+    'v' = tv (must have theater-style seating)
+    'w' = workout/gym/exercise
+    'x' = outdoor areas containing grass, plants, bushes, trees, etc.
+    'y' = balcony (must be outside and must not be on ground floor)
+    'z' = other room (it is clearly a room, but the function is not clear)
+    'B' = bar
+    'C' = classroom
+    'D' = dining booth
+    'S’ = spa/sauna
+    'Z' = junk (reflections of mirrors, random points floating in space, etc.)
+    '-' = no label 
 
 
 Benchmark Task Data
