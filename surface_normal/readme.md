@@ -4,12 +4,23 @@ This is an extension of the 3D surface normal estimation code from: https://gith
 	
 Please contact me (yindaz AT cs DOT princeton DOT edu) if you have any problem.
 
+## Data
+To run surface normal experiment, you need to download the undistorted color images and surface normal images. If you have signed the agreement and have the download script, you may call:
+```
+python download_mp.py --type undistorted_color_images undistorted_normal_images --task_data surface_normal_data [surface_normal_pretrain]
+```
+This gives you necessary training and testing image together with the ground truth. It also downloads a zip of files containing the list of training/testing data. You should unzip the list files here. Optionally, we provide several pretrained models for quick testing, which can be downloaded with `surface_normal_pretrain`. The pretrained models are trained as following:
+
+| Training                               | Model name     |
+| -------------------------------------- | -------------- |
+| Synthetic data                         | sync.t7        |
+| Synthetic data + Matterport3D          | sync_mp.t7     |
+| Synthetic data + Matterport3D + NYUv2  | sync_mp_nyu.t7 |
+
 ## Testing
-You need to specify the `-root_path` in [`config.lua`](./config.lua) to the root path of the matterport dataset.
+You need to specify the `-root_path` in [`config.lua`](./config.lua) to the root path of the matterport dataset. 
 
-We provide several pretrained models for testing. You can download them in [`./model/`](./model/).
-
-Run
+Assuming that pretrained models are saved in [`model`](./model), run
 ```
 th main_test_matterport.lua -test_model ./model/sync_mp.t7
 ```
@@ -33,7 +44,7 @@ evaluate_normal_mp('./result/sync_mp_matterport_test/','Path to root of matterpo
 ```
 This function returns the pixelwise auglar loss on each testing image.
 
-## Data
+## External Data
 To train on synthetic image, you can find the training data from http://pbrs.cs.princeton.edu. Specifically,
 - `Color image`: http://pbrs.cs.princeton.edu/pbrs_release/data/mlt_v2.zip (278GB)
 - `Surface normal ground truth`: http://pbrs.cs.princeton.edu/pbrs_release/data/normal_v2.zip (27GB)
