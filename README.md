@@ -315,11 +315,18 @@ Benchmark Task Data
 
 ODO list files
 
-**Keypoint Matching**  
+**Image Keypoint Matching**  
 TODO brief description and link to own readme for how to use code
 
-**View Overlap Prediction**  
+**Image Overlap Prediction**  
 TODO brief description and link to own readme for how to use code
 
 **Surface Normal Estimation**  
 In surface normal estimation task, the model predicts pixelwise surface normal, as unit vectors in 3D, given a single color image as the input. Please check [`https://github.com/niessner/Matterport/tree/master/surface_normal`](./surface_normal) for train/test codes, pretrained models, and auxiliary data for the experiments. 
+
+**Object-Level Semantic Segmentation**  
+TODO brief description and link to own readme for how to use code
+
+**Image Room-Type Categorization**  
+TODO brief description and link to own readme for how to use code
+
