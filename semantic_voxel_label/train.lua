@@ -19,8 +19,8 @@ opt_string = [[
 	-g,--gpu_index		  (default 0)			 GPU index (start from 0)
 	--max_epoch			 (default 200)		   maximum number of epochs
 	--jitter_step		   (default 2)			 jitter augmentation step size
-	--train_data			(default "data/modelnet40_60x/train_data.txt")	 txt file containing train h5 filenames
-	--test_data			 (default "data/modelnet40_60x/test_data.txt")	  txt file containing test h5 filenames
+	--train_data			(default "data/h5_semantic_voxel/train_shape_voxel_data_list.txt")	 txt file containing train h5 filenames
+	--test_data			 (default "data/h5_semantic_voxel/test_shape_voxel_data_list.txt.txt")	  txt file containing test h5 filenames
 	--retrain			   (default "")			retrain model
 	--class_hist_file	   (default "classes_hist.txt")		histogram for weight norm
 ]]

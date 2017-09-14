@@ -70,7 +70,7 @@ function loadMatchFiles(basePath, files, padding, skip, imWidth, imHeight, scale
             _pos[i][4][1] = _pos[i][4][1] * scaleX; _pos[i][4][2] = _pos[i][4][2] * scaleY
             _neg[i][4] = strToVec2(_neg[i][4])
             _neg[i][4][1] = _neg[i][4][1] * scaleX; _neg[i][4][2] = _neg[i][4][2] * scaleY
-            
+
             assert(_pos[i][1] == _neg[i][1])    --make sure the match index is the same
         end
 
@@ -243,6 +243,21 @@ function recursiveModelFreeze(model)
         end
         if torch.type(tmpLayer):find('Sequential') or torch.type(tmpLayer):find('ConcatTable') then
             recursiveModelFreeze(tmpLayer)
+        end
+    end
+end
+
+function recursiveModelReset(model)
+    for i = 1,model:size() do
+        local tmpLayer = model:get(i)
+        --print(i)
+        --print(tmpLayer)
+        if torch.type(tmpLayer):find('Convolution') or torch.type(tmpLayer):find('Linear') then
+            --print('reset')
+            tmpLayer:reset()
+        end
+        if torch.type(tmpLayer):find('Sequential') or torch.type(tmpLayer):find('ConcatTable') or torch.type(tmpLayer):find('ParallelTable') then
+            recursiveModelReset(tmpLayer)
         end
     end
 end

@@ -34,10 +34,9 @@ function getModel()
     local distanceModel = nn.ConcatTable():add(posDistModel):add(negDistModel)
 
     -- Build complete model
-    local model = nn.Sequential():add(tripletModel):add(distanceModel)
+    local model = nn.Sequential():add(tripletModel):add(distanceModel):add(nn.JoinTable(1))
 
-    -- Defines triplet loss from "Deep Metric Learning using Triplet Network" http://arxiv.org/abs/1412.6622
-    local criterion = nn.DistanceRatioCriterion(true)
+    local criterion = nn.HingeEmbeddingCriterion(1)
 
     return model,criterion
 end
