@@ -313,10 +313,8 @@ The label of each room is a string with the following conventions:
 Benchmark Task Data
 =======================
 
-ODO list files
-
 **Image Keypoint Matching**  
-TODO brief description and link to own readme for how to use code
+The image keypoint matching task aims to establish correspondences between image data by learning feature descriptors in a self-supervised fashion, leveraging the wide variety of camera baselines in the Matterport3D dataset. Please see [keypointmatch](keypointmatch).
 
 **Image Overlap Prediction**  
 TODO brief description and link to own readme for how to use code
@@ -324,8 +322,8 @@ TODO brief description and link to own readme for how to use code
 **Surface Normal Estimation**  
 In surface normal estimation task, the model predicts pixelwise surface normal, as unit vectors in 3D, given a single color image as the input. Please check [`https://github.com/niessner/Matterport/tree/master/surface_normal`](./surface_normal) for train/test codes, pretrained models, and auxiliary data for the experiments. Note that to run the experiments for surface normal estimation, you don't need to download the whole dataset. Please see [`here`](./surface_normal/readme.md) for how to download necessary data.
 
-**Object-Level Semantic Segmentation**  
-TODO brief description and link to own readme for how to use code
+**Semantic Voxel Labeling**  
+The semantic voxel labeling task predicts per-voxel class labels for a scan. Please see [semantic_voxel_label](semantic_voxel_label).
 
 **Image Room-Type Categorization**  
 TODO brief description and link to own readme for how to use code
