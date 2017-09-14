@@ -4,7 +4,7 @@ Predicts per-voxel class labels for a scan, which are labeled column-by-column.
 Code is adapted from the [semantic voxel labeling task of ScanNet](https://github.com/ScanNet/ScanNet/tree/master/Tasks/), but uses only occupancy information in a 31x31x62 neighborhood to labeling the 1x1x62 center column.
 
 ## Installation
-Training tasks use [Torch7](http://torch.ch/docs/getting-started.html), with torch packages `cudnn`, `cunn`, `hdf5`, `xlua`.
+Training uses [Torch7](http://torch.ch/docs/getting-started.html), with torch packages `cudnn`, `cunn`, `hdf5`, `xlua`.
 
 ## Training
 ```
