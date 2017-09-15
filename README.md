@@ -50,12 +50,12 @@ Data computed for the convenience of future research:
 - undistorted_depth_images = depth images after undistortion
 - undistorted_normal_images = normal and boundary images aligned with undistorted depth images
 - poisson_meshes = meshes resulting from poisson mesh reconstruction
-- vh_meshes = meshes resulting from voxel hashing
-- overlaps = statistics about how much each pair of images overlaps
+- view_overlaps = statistics about how much each pair of images overlaps
 
 Manually specified annotations:
 - cameras = camera extrinsics for manually chosen good view(s)
-- houses = manually drawn floorplans and room labels
+- house_floorplans = manually drawn floorplans with region labels
+- object_segmentations = manually specified object instance and category labels for surfaces of a 3D mesh
 
 Details about each of these data directories follow.
 
@@ -162,12 +162,8 @@ poisson_meshes
 Surface meshes reconstructed from the depth images using [Screened Poisson Surface Reconstruction](http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version9.01/).
 The files are binary PLY format. 
 
-vh_meshes
----------------------
-Surface meshes reconstructed from the depth images using [VoxelHashing](https://github.com/niessner/VoxelHashing).
-The files are binary PLY format. 
 
-overlaps
+view_overlaps
 ---------------------
 Statistics about how images "overlap" with one another.  There are three main files. The first (xxx_iis.txt) has a line for every pair of images whose visible surfaces overlap.   The second (xxx_vi.txt) has a line for a sampling of vertices on the specified surface mesh indicating which images see it. The third (xxx_iv.txt) has a line for each image indicating a sampling of vertices of the mesh are seen by it.   The other files (xxx_iis_iou.png and (xxx_iis_count.png) have the same information in more convenient matrix forms.  Details of the file formats follow.
 
@@ -259,23 +255,23 @@ Each .cam file has one line per camera with ascii numbers indicating the followi
 
 where (vx, vy, vz) is the eye viewpoint of the camera, (tx, ty, tz) is the view direction, (ux, uy, uz) is the up direction, and xfov and yfov are the half-angles of the horizontal and vertical fields of view of the camera in radians (the angle from the central ray to the leftmost/bottommost ray in the field of view).
 
-houses
+house_floorplans
 ---------------------
-A list of manually specified floor and room boundaries along with semantic room labels.
+A list of manually specified floor and region boundaries along with semantic regon labels.
 
 Each .house file has a sequence of ascii lines with fields separated by spaces in the following format:
 
-    H name label #images #panoramas #vertices #surfaces #rooms #levels  0 0 0 0 0 0 0 0
-    L level_index #rooms label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
-    R room_index level_index #panoramas #surfaces label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
-    S surface_index room_index #vertices #surfaces label  px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi 0 0 0 0 0
+    H name label #images #panoramas #vertices #surfaces #regions #levels  0 0 0 0 0 0 0 0
+    L level_index #regions label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+    R region_index level_index #panoramas #surfaces label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+    S surface_index region_index #vertices #surfaces label  px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi 0 0 0 0 0
     V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
-    P name panorama_index room_index #images  px py pz  0 0 0 0 0
+    P name panorama_index region_index #images  px py pz  0 0 0 0 0
     I name panorama_index panorama_index  px py pz  0 0 0 0 0
    
-where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, and 0 is a value that can be ignored.   The extent of each room is defined by a prism with its vertical extent dictated by zlo and zhi as its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with the first surface assocated with the room.  
+where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, and 0 is a value that can be ignored.   The extent of each region is defined by a prism with its vertical extent dictated by zlo and zhi as its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with the first surface assocated with the region.  
 
-The label of each room is a string with the following conventions:
+The label of each region is a string with the following conventions:
 
     'a' = bathroom (should have a toilet and a sink)
     'b' = bedroom
@@ -305,26 +301,50 @@ The label of each room is a string with the following conventions:
     'B' = bar
     'C' = classroom
     'D' = dining booth
-    'S’ = spa/sauna
+    'S' = spa/sauna
     'Z' = junk (reflections of mirrors, random points floating in space, etc.)
     '-' = no label 
+    
+    
+object_segmentations
+---------------------
+A set of manually specified segment, object instance, and semantic category labels for walls, floors, ceilings, doors, windows, and "furniture-sized" objects. 
+
+The meshes and annotations are split into regions for each of processing.  The labels are provided as annotations on 3D meshes.   A ply file provides the raw geometry for each region.   Json files indicate how each triangle of the mesh is associated with a "segment", how segments are associated with object instances, and, how object instances are associated with semantic categories as follows:
+
+    regionX.ply = 3D mesh in ply format.   In addition to the usual fields, there are three additional fields for each face:
+        face_material = unique id of segment containing this face
+        face_segment = unique id of object instance containing this face
+        face_category = unique id of the category label for the object instance containing this face 
+            (i.e., mapping to the "index" column of the category.tsv file)
+        
+    regionX.fsegs.json = JSON file indicating which segment contains each face of the mesh in regionX.ply, where
+        segIndices = an array of unique segment IDs, one per face in the order it appears in the mesh 
+               (i.e., the Kth entry provides the unique segment ID for the Kth face of the mesh)   
+               
+    regionX.semseg.json = JSON file containing an array of object instances with category labels, where
+        segGroups = an array of object instances, each with the following fields
+            label = string indicating the raw label provided by a human annotator for that object instance
+                (this label maps to the "raw category" column of categories.tsv)
+            segments = an array containing the unique ids for all segments in this object instance
+                (the unique ids for segments map to ones found in regionX.fsegs.json)
 
 
 Benchmark Task Data
 =======================
 
 **Image Keypoint Matching**  
-The image keypoint matching task aims to establish correspondences between image data by learning feature descriptors in a self-supervised fashion, leveraging the wide variety of camera baselines in the Matterport3D dataset. Please see [keypointmatch](keypointmatch).
+The image keypoint matching task aims to establish correspondences between keypoints in RGB image data.   It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data. Please see [keypointmatch] (keypointmatch).
 
-**Image Overlap Prediction**  
-TODO brief description and link to own readme for how to use code
+**View Overlap Prediction**  
+The view overlap prediction task aims to predict how much the views of two images overlap (what fraction of the visible surfaces are shared between the views).  It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data.  Please check [`https://github.com/niessner/Matterport/tree/master/view_overlap`](./view_overlap) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [`here`](./view_overlap/readme.md) for how to download  the data and run the scripts for this task.
 
 **Surface Normal Estimation**  
-In surface normal estimation task, the model predicts pixelwise surface normal, as unit vectors in 3D, given a single color image as the input. Please check [`https://github.com/niessner/Matterport/tree/master/surface_normal`](./surface_normal) for train/test codes, pretrained models, and auxiliary data for the experiments. Note that to run the experiments for surface normal estimation, you don't need to download the whole dataset. Please see [`here`](./surface_normal/readme.md) for how to download necessary data.
+The surface normal estimation task aims toi predict pixelwise surface normals from RGB images.   It leverages normals estimated from the vast number of RGB-D image pairs in the Matterport3D dataset as training and testing data.  Please check [`https://github.com/niessner/Matterport/tree/master/surface_normal`](./surface_normal) for train/test codes, pretrained models, and auxiliary data for the experiments. Note that to run the experiments for surface normal estimation, you don't need to download the whole dataset. Please see [`here`](./surface_normal/readme.md) for how to download the data and run the scripts for this task.
 
 **Semantic Voxel Labeling**  
 The semantic voxel labeling task predicts per-voxel class labels for a scan. Please see [semantic_voxel_label](semantic_voxel_label).
 
-**Image Room-Type Categorization**  
-TODO brief description and link to own readme for how to use code
+**Room-Type Categorization**  
+The room type categorization task aims to predict the semantic category of the region (e.g., bedroom, kitchen, patio, etc.) containing the camera viewpoint of an RGB image or panorama.   It leverages semantic boundaries and labels for manually-specified regions in the Matterport3D dataset.  Please check [`https://github.com/niessner/Matterport/tree/master/room_categorization`](./room_categorization) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [`here`](./room_categorization/readme.md) for how to download the data and run the scripts for this task.
 
