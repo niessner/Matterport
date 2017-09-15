@@ -53,8 +53,11 @@ Data computed for the convenience of future research:
 
 Manually specified annotations:
 - cameras = camera extrinsics for manually chosen good view(s)
-- house_floorplans = manually drawn floorplans with region labels
-- object_segmentations = manually specified object instance and category labels for surfaces of a 3D mesh
+- region_segmentations = manually specified floorplans with instance and semantic category labels
+- object_segmentations = manually specified object instance and semantic category labels for surfaces of a 3D mesh
+
+Task specific data:
+- view_overlap_data = computed overlaps (loop closures) between pairs of views within the same house 
 
 Details about each of these data directories follow.
 
@@ -261,7 +264,7 @@ The meshes and annotations are split into regions for each of processing.  The l
                 (the unique ids for segments map to ones found in regionX.fsegs.json)
 
 
-view_overlaps
+view_overlap_data
 ---------------------
 Statistics about how images "overlap" with one another.  There are three main files. The first (xxx_iis.txt) has a line for every pair of images whose visible surfaces overlap.   The second (xxx_vi.txt) has a line for a sampling of vertices on the specified surface mesh indicating which images see it. The third (xxx_iv.txt) has a line for each image indicating a sampling of vertices of the mesh are seen by it.   The other files (xxx_iis_iou.png and (xxx_iis_count.png) have the same information in more convenient matrix forms.  Details of the file formats follow.
 
