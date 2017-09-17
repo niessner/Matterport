@@ -22,9 +22,9 @@ So, for each tripod placement (panorama_uuid), a total of 18
 images are captured.  Files associated with these images adhere to the 
 following naming convention:
 
-<panorama_uuid>_<prefix><camera_index>_<yaw_index>.<extension>
+<panorama_uuid>\_<type><camera_index>\_<yaw_index>.<extension>
 
-where <panorama_uuid> is a unique string, <camera_index> is [0-5], and <yaw_index> is [0-2].  <prefix> is 'j' for HDR images, 'i' for tone-mapped color images, 'd' for depth images, "skybox" for skybox images, "pose" for camera pose files, and "intrinsics" for camera intrinsics files.  The extension is ".jxr" for HDR images, ".jpg" for tone-mapped color images, and ".png" for depth and normal images.
+where <panorama_uuid> is a unique string, <camera_index> is [0-5], and <yaw_index> is [0-2].  <type> is 'j' for HDR images, 'i' for tone-mapped color images, 'd' for depth images, "skybox" for skybox images, "pose" for camera pose files, and "intrinsics" for camera intrinsics files.  The extension is ".jxr" for HDR images, ".jpg" for tone-mapped color images, and ".png" for depth and normal images.
 
 
 Data organization
