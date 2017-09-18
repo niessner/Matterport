@@ -348,7 +348,7 @@ Benchmark Task Data
 =======================
 
 **Image Keypoint Matching**  
-The image keypoint matching task aims to establish correspondences between keypoints in RGB image data.   It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data. Please see [keypointmatch] (keypointmatch).
+The image keypoint matching task aims to establish correspondences between keypoints in RGB image data.   It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data. Please see [keypoint_match] (keypoint_match).
 
 **View Overlap Prediction**  
 The view overlap prediction task aims to predict how much the views of two images overlap (what fraction of the visible surfaces are shared between the views).  It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data.  Please check [`https://github.com/niessner/Matterport/tree/master/view_overlap`](./view_overlap) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [`here`](./view_overlap/readme.md) for how to download  the data and run the scripts for this task.
