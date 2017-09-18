@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)http://vision.cs.princeton.edu/projects/2017/Matterport3D/ -->
+<html><script async="" src="./index_files/analytics.js"></script><script>(function main() {
+    // Create enabled event
+    function fireEnabledEvent() {
+        // If gli exists, then we are already present and shouldn't do anything
+        if (!window.gli) {
+            setTimeout(function () {
+                var enabledEvent = document.createEvent("Event");
+                enabledEvent.initEvent("WebGLEnabledEvent", true, true);
+                document.dispatchEvent(enabledEvent);
+            }, 0);
+        } else {
+            //console.log("WebGL Inspector already embedded on the page - disabling extension");
+        }
+    };
+
+    // Grab the path root from the extension
+    document.addEventListener("WebGLInspectorReadyEvent", function (e) {
+        var pathElement = document.getElementById("__webglpathroot");
+        if (window["gliloader"]) {
+            gliloader.pathRoot = pathElement.innerText;
+        } else {
+            // TODO: more?
+            window.gliCssUrl = pathElement.innerText + "gli.all.css";
+        }
+    }, false);
+
+    // Rewrite getContext to snoop for webgl
+    var originalGetContext = HTMLCanvasElement.prototype.getContext;
+    if (!HTMLCanvasElement.prototype.getContextRaw) {
+        HTMLCanvasElement.prototype.getContextRaw = originalGetContext;
+    }
+    HTMLCanvasElement.prototype.getContext = function () {
+        var ignoreCanvas = this.internalInspectorSurface;
+        if (ignoreCanvas) {
+            return originalGetContext.apply(this, arguments);
+        }
+
+        var result = originalGetContext.apply(this, arguments);
+        if (result == null) {
+            return null;
+        }
+
+        var contextNames = ["moz-webgl", "webkit-3d", "experimental-webgl", "webgl", "3d"];
+        var requestingWebGL = contextNames.indexOf(arguments[0]) != -1;
+        if (requestingWebGL) {
+            // Page is requesting a WebGL context!
+            fireEnabledEvent(this);
+
+            // If we are injected, inspect this context
+            if (window.gli) {
+                if (gli.host.inspectContext) {
+                    // TODO: pull options from extension
+                    result = gli.host.inspectContext(this, result);
+                    // NOTE: execute in a timeout so that if the dom is not yet
+                    // loaded this won't error out.
+                    window.setTimeout(function() {
+                        var hostUI = new gli.host.HostUI(result);
+                        result.hostUI = hostUI; // just so we can access it later for debugging
+                    }, 0);
+                }
+            }
+        }
+
+        return result;
+    };
+})();</script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Matterport3D: Learning from RGB-D Data in Indoor Environments</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./index_files/w3.css">
+<link rel="stylesheet" href="./index_files/font_Inconsolata.css">
+<!-- <link rel="stylesheet" type="text/css" href="http://vision.princeton.edu/web/pvg.css"> -->
+<style>
+body, html {
+    height: 100%;
+    font-family: "PVGCGFont", sans-serif;
+}
+.bgimg {
+    background-position: center;
+    background-size: cover;
+    background-image: url("teaser.jpg");
+    min-height: 75%;
+}
+.menu {
+    display: none;
+}
+</style>
+<script type="text/javascript" charset="UTF-8" src="./index_files/common.js"></script><script type="text/javascript" charset="UTF-8" src="./index_files/util.js"></script><script type="text/javascript" charset="UTF-8" src="./index_files/stats.js"></script></head><body>
+
+<!-- Links (sit on top) -->
+<div class="w3-top">
+  <div class="w3-row w3-padding w3-black">
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#intro" class="w3-button w3-block w3-black">Introduction</a>
+    </div>
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#paper" class="w3-button w3-block w3-black">Citation</a>
+    </div>
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#dataset" class="w3-button w3-block w3-black">Dataset Download</a>
+    </div>
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#render" class="w3-button w3-block w3-black">Toolbox and Vision Tasks</a>
+    </div>
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#viewer" class="w3-button w3-block w3-black">Statistic and Explore</a>
+    </div>
+<!--     <div class="w3-col s3">
+      <a href="#semantic" class="w3-button w3-block w3-black">Semantic Segmentation</a>
+    </div>
+    <div class="w3-col s3">
+      <a href="#boundary" class="w3-button w3-block w3-black">Instance Boundary</a>
+    </div> -->
+    <div class="w3-col s2">
+      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#contact" class="w3-button w3-block w3-black">Contact</a>
+    </div>
+  </div>
+</div>
+
+<!-- Header with image -->
+<!-- <header class="bgimg w3-display-container w3-grayscale-min" id="home">
+  <div class="w3-display-bottomleft w3-center w3-padding-large w3-hide-small">
+    <span class="w3-tag">Open from 6am to 5pm</span>
+  </div>
+  <div class="w3-display-middle w3-center">
+    <span class="w3-text-white" style="font-size:90px">the<br>Cafe</span>
+  </div>
+  <div class="w3-display-bottomright w3-center w3-padding-large">
+    <span class="w3-text-white">15 Adr street, 5015</span>
+  </div>
+</header> -->
+
+<header>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-97394567-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</header>
+<br><br>
+
+<!-- Add a background color and large text to the whole page -->
+<!-- <div class="w3-large"> -->
+
+<div class="w3-container" id="intro">
+  <div class="w3-content" style="max-width:850px">
+  <br><br>
+    <h2 class="w3-center w3-padding-32"><b>Matterport3D: Learning from RGB-D Data in Indoor Environments</b></h2>
+    <center><img src="./index_files/teaser.png" style="width: 100%;"></center>
+    <br>
+    <h3><b>Abstract</b></h3>
+    <p>
+    Access to large, diverse RGB-D datasets is critical for training RGB-D scene understanding algorithms. However, existing datasets still cover only a limited number of views or a restricted scale of spaces. In this paper, we introduce Matterport3D, a large-scale RGB-D dataset containing 10,800 panoramic views from 194,400 RGB-D images of 90 building-scale scenes.  Annotations are provided with surface reconstructions, camera poses, and 2D and 3D semantic segmentations. The precise global alignment and comprehensive, diverse panoramic set of views over entire buildings enable a variety of supervised and self-supervised computer vision tasks, including keypoint matching, view overlap prediction, normal prediction from color, semantic segmentation, and scene classification.
+    </p>
+
+  </div>
+</div>
+
+
+<div class="w3-container" id="paper">
+  <div class="w3-content" style="max-width:850px">
+    <br><br>
+    <h3 class="w3-left-align"><b>Paper</b></h3>
+    <ul>
+      <li>
+        A. Chang<sup>*</sup>, A. Dai<sup>*</sup>, T. Funkhouser<sup>*</sup>, M. Halber<sup>*</sup>, M. Niessner<sup>*</sup>, M. Savva<sup>*</sup>, S. Song<sup>*</sup>, A. Zeng<sup>*</sup>, Y. Zhang<sup>*</sup> <br>
+        <b><a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper.pdf">Matterport3D: Learning from RGB-D Data in Indoor Environments</a></b><br>
+        International Conference on 3D Vision (3DV 2017) <br>
+        <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper.pdf">Paper</a> <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper_lowres.pdf">(low res)</a> &nbsp;&nbsp;&nbsp;&nbsp;<a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_supp.pdf">Supplementary Material</a> <br><br>
+      </li>
+      <li> Bibtex:
+      <div class="w3-panel w3-leftbar w3-light-grey">
+      @article{Matterport3D, <br>
+        &nbsp;&nbsp; title={Matterport3D: Learning from RGB-D Data in Indoor Environments}, <br>
+        &nbsp;&nbsp; author={Chang, Angel and Dai, Angela and Funkhouser, Thomas and Halber, Maciej and Niessner, Matthias and Savva, Manolis and Song, Shuran and Zeng, Andy and Zhang, Yinda}, <br>
+        &nbsp;&nbsp; journal={International Conference on 3D Vision (3DV)}, <br>
+        &nbsp;&nbsp; year={2017} 
+      }
+    </div>
+      </li>
+
+
+    </ul>
+    
+  </div>
+</div>
+
+
+<div class="w3-container" id="dataset">
+  <div class="w3-content" style="max-width:850px">
+    <br><br>
+    <h3 class="w3-left-align"><b>Dataset Download</b></h3>
+    <p>Please sign the <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_agreement.pdf">agreement form</a> and send it to xxx to get the access to the dataset.</p>
+  </div>
+</div>
+
+<div class="w3-container" id="render">
+  <div class="w3-content" style="max-width:850px">
+    <br><br>
+    <h3 class="w3-left-align"><b>Toolbox and Codes for vision tasks</b></h3>
+    <p>Please check the git repository for:</p>
+    <ui>
+    <li>Detailed introducton about dataset.</li>
+    <li>Codes for vision tasks.</li>
+    </ui>
+    <a class="w3-text-grey" href="https://github.com/niessner/Matterport">Repository</a><br>
+  </div>
+</div>
+
+<div class="w3-container" id="viewer">
+  <div class="w3-content" style="max-width:850px">
+    <br><br>
+    <h3 class="w3-left-align"><b>Statistic and Explore</b></h3>
+    Coming soon!   
+  </div>
+</div>
+
+<div class="w3-container" id="contact">
+  <div class="w3-content" style="max-width:850px">
+    <br><br>
+    <h3 class="w3-left-align"><b>Contact</b></h3>
+    This dataset is hosted by xxxx. Please contact xxx for any question.    
+  </div>
+</div>
+
+<br><br><br><br><br><br>
+
+<!-- Footer -->
+<!-- <footer class="w3-center w3-light-grey w3-padding-48 w3-large">
+  <p>Powered by <a href="https://www.w3schools.com/w3css/default.asp" title="W3.CSS" target="_blank" class="w3-hover-text-green">w3.css</a></p>
+</footer> -->
+
+<!-- <script type="text/javascript" src="http://vision.princeton.edu/web/footer.js"></script> -->
+
+<!-- Add Google Maps -->
+<script>
+function myMap()
+{
+  myCenter=new google.maps.LatLng(41.878114, -87.629798);
+  var mapOptions= {
+    center:myCenter,
+    zoom:12, scrollwheel: false, draggable: false,
+    mapTypeId:google.maps.MapTypeId.ROADMAP
+  };
+  var map=new google.maps.Map(document.getElementById("googleMap"),mapOptions);
+
+  var marker = new google.maps.Marker({
+    position: myCenter,
+  });
+  marker.setMap(map);
+}
+
+// Tabbed Menu
+function openMenu(evt, menuName) {
+  var i, x, tablinks;
+  x = document.getElementsByClassName("menu");
+  for (i = 0; i < x.length; i++) {
+     x[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablink");
+  for (i = 0; i < x.length; i++) {
+     tablinks[i].className = tablinks[i].className.replace(" w3-dark-grey", "");
+  }
+  document.getElementById(menuName).style.display = "block";
+  evt.currentTarget.firstElementChild.className += " w3-dark-grey";
+}
+document.getElementById("myLink").click();
+</script>
+<script src="./index_files/js"></script>
+<!--
+To use this code on your website, get a free API key from Google.
+Read more at: https://www.w3schools.com/graphics/google_maps_basic.asp
+-->
+
+
+
+<div id="gleeBox" style="display:none" class="GleeThemeDefault gleeMediumSize"><input type="text" id="gleeSearchField" value="" autocomplete="off" class="ac_input GleeThemeDefault gleeMediumSize"><div id="gleeSub"><div id="gleeSubText"></div><div id="gleeSearchActivity"></div><div id="gleeSubURL"></div></div></div></body><style type="text/css">/*This block of style rules is injected by gleeBox*/.GleeReaped { background-color: #f9f2a5 !important; outline: 1px dotted #818181 !important; } .GleeHL { -webkit-box-shadow: hsla(71, 89%, 70%, 1) -2px -2px 0px, hsla(71, 89%, 70%, 1)  2px -2px 0px, hsla(71, 100%, 45%, 1) -2px  2px 0px, hsla(71, 100%, 45%, 1)  2px  2px 0px, hsla(71, 100%, 80%, 1)  0px 0px 0px 3px, rgba(42, 35, 0, 0.8)  1px  1px 3px 3px !important; border-radius: 3px !important; color: #000 !important; outline: none !important; border: none !important; background: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsla(71, 100%, 47%, 1)), color-stop(1, hsla(71, 89%, 70%, 1))) !important;} a.GleeHL, .GleeHL a {color: #000 !important;} input[type=checkbox].GleeHL, input[type=radio].GleeHL { outline: 5px solid hsla(71, 89%, 70%, 1) !important;}</style></html>
