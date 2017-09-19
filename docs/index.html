@@ -6,13 +6,6 @@
   <title>Matterport3D: Learning from RGB-D Data in Indoor Environments</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="./w3.css">
-  <!-- <link rel="stylesheet" type="text/css" href="http://vision.princeton.edu/web/pvg.css"> -->
-  <style>
-  body, html {
-    height: 100%;
-    font-family: sans-serif;
-  }
-  </style>
 </head>
 
 <body>
@@ -21,100 +14,74 @@
 <div class="w3-top">
   <div class="w3-row w3-padding w3-black">
     <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#intro" class="w3-button w3-block w3-black">Introduction</a>
+      <a href="#intro" class="w3-button w3-block w3-black">Introduction</a>
     </div>
     <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#paper" class="w3-button w3-block w3-black">Citation</a>
+      <a href="#download" class="w3-button w3-block w3-black">Download</a>
     </div>
     <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#dataset" class="w3-button w3-block w3-black">Dataset Download</a>
+      <a href="#code" class="w3-button w3-block w3-black">Code</a>
     </div>
     <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#render" class="w3-button w3-block w3-black">Toolbox and Vision Tasks</a>
+      <a href="#explore" class="w3-button w3-block w3-black">Explore</a>
     </div>
     <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#viewer" class="w3-button w3-block w3-black">Statistic and Explore</a>
-    </div>
-    <div class="w3-col s2">
-      <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/#contact" class="w3-button w3-block w3-black">Contact</a>
+      <a href="#contact" class="w3-button w3-block w3-black">Contact</a>
     </div>
   </div>
 </div>
 
-<br><br>
-
 <div class="w3-container" id="intro">
   <div class="w3-content" style="max-width:850px">
-  <br><br>
     <h2 class="w3-center w3-padding-32"><b>Matterport3D: Learning from RGB-D Data in Indoor Environments</b></h2>
     <center><img src="./teaser.png" style="width: 100%;"></center>
-    <br>
     <h3><b>Abstract</b></h3>
     <p>
     Access to large, diverse RGB-D datasets is critical for training RGB-D scene understanding algorithms. However, existing datasets still cover only a limited number of views or a restricted scale of spaces. In this paper, we introduce Matterport3D, a large-scale RGB-D dataset containing 10,800 panoramic views from 194,400 RGB-D images of 90 building-scale scenes.  Annotations are provided with surface reconstructions, camera poses, and 2D and 3D semantic segmentations. The precise global alignment and comprehensive, diverse panoramic set of views over entire buildings enable a variety of supervised and self-supervised computer vision tasks, including keypoint matching, view overlap prediction, normal prediction from color, semantic segmentation, and scene classification.
     </p>
-  </div>
-</div>
 
-<div class="w3-container" id="paper">
-  <div class="w3-content" style="max-width:850px">
-    <br><br>
     <h3 class="w3-left-align"><b>Paper</b></h3>
-    <ul>
-      <li>
-        A. Chang<sup>*</sup>, A. Dai<sup>*</sup>, T. Funkhouser<sup>*</sup>, M. Halber<sup>*</sup>, M. Niessner<sup>*</sup>, M. Savva<sup>*</sup>, S. Song<sup>*</sup>, A. Zeng<sup>*</sup>, Y. Zhang<sup>*</sup> <br>
-        <b><a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper.pdf">Matterport3D: Learning from RGB-D Data in Indoor Environments</a></b><br>
-        International Conference on 3D Vision (3DV 2017) <br>
-        <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper.pdf">Paper</a> <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_paper_lowres.pdf">(low res)</a> &nbsp;&nbsp;&nbsp;&nbsp;<a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_supp.pdf">Supplementary Material</a> <br><br>
-      </li>
-      <li> Bibtex:
-        <div class="w3-panel w3-leftbar w3-light-grey">
-        @article{Matterport3D, <br>
-          &nbsp;&nbsp; title={Matterport3D: Learning from RGB-D Data in Indoor Environments}, <br>
-          &nbsp;&nbsp; author={Chang, Angel and Dai, Angela and Funkhouser, Thomas and Halber, Maciej and Niessner, Matthias and Savva, Manolis and Song, Shuran and Zeng, Andy and Zhang, Yinda}, <br>
-          &nbsp;&nbsp; journal={International Conference on 3D Vision (3DV)}, <br>
-          &nbsp;&nbsp; year={2017}
-        }
-        </div>
-      </li>
-    </ul>
+    A. Chang<sup>*</sup>, A. Dai<sup>*</sup>, T. Funkhouser<sup>*</sup>, M. Halber<sup>*</sup>, M. Niessner<sup>*</sup>, M. Savva<sup>*</sup>, S. Song<sup>*</sup>, A. Zeng<sup>*</sup>, Y. Zhang<sup>*</sup> <br>
+    <b><a href="link_to_paper.pdf">Matterport3D: Learning from RGB-D Data in Indoor Environments</a></b><br>
+    International Conference on 3D Vision (3DV 2017) <br>
+    <a href="link_to_paper.pdf">Paper</a> <a href="link_to_paper_lowres.pdf">(low res)</a> &nbsp;&nbsp;&nbsp;&nbsp;<a href="link_to_supp.pdf">Supplementary Material</a>
+
+    <div class="w3-panel w3-leftbar w3-light-grey">
+    @article{Matterport3D, <br>
+      &nbsp;&nbsp; title={Matterport3D: Learning from RGB-D Data in Indoor Environments}, <br>
+      &nbsp;&nbsp; author={Chang, Angel and Dai, Angela and Funkhouser, Thomas and Halber, Maciej and Niessner, Matthias and Savva, Manolis and Song, Shuran and Zeng, Andy and Zhang, Yinda}, <br>
+      &nbsp;&nbsp; journal={International Conference on 3D Vision (3DV)}, <br>
+      &nbsp;&nbsp; year={2017}
+    }
+    </div>
   </div>
 </div>
 
-<div class="w3-container" id="dataset">
+<div class="w3-container" id="download">
   <div class="w3-content" style="max-width:850px">
-    <br><br>
     <h3 class="w3-left-align"><b>Dataset Download</b></h3>
-    <p>Please sign the <a href="http://vision.cs.princeton.edu/projects/2017/Matterport3D/link_to_agreement.pdf">agreement form</a> and send it to xxx to get the access to the dataset.</p>
+    <p>Please fill and sign the <a href="http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf">Terms of Use</a> agreement form and send it to <a href="mailto:matterport3d@googlegroups.com">matterport3d@googlegroups.com</a> to request access to the dataset.</p>
   </div>
 </div>
 
-<div class="w3-container" id="render">
+<div class="w3-container" id="code">
   <div class="w3-content" style="max-width:850px">
-    <br><br>
-    <h3 class="w3-left-align"><b>Toolbox and Codes for vision tasks</b></h3>
-    <p>Please check the git repository for:</p>
-    <ui>
-    <li>Detailed introducton about dataset.</li>
-    <li>Codes for vision tasks.</li>
-    </ui>
-    <a class="w3-text-grey" href="https://github.com/niessner/Matterport">Repository</a><br>
+    <h3 class="w3-left-align"><b>Code</b></h3>
+    <p>Please check the <a href="https://github.com/niessner/Matterport">git repository</a> for a detailed introduction to the dataset and code for several vision tasks.</p>
   </div>
 </div>
 
-<div class="w3-container" id="viewer">
+<div class="w3-container" id="explore">
   <div class="w3-content" style="max-width:850px">
-    <br><br>
-    <h3 class="w3-left-align"><b>Statistic and Explore</b></h3>
+    <h3 class="w3-left-align"><b>Explore the dataset</b></h3>
     Coming soon!
   </div>
 </div>
 
 <div class="w3-container" id="contact">
   <div class="w3-content" style="max-width:850px">
-    <br><br>
     <h3 class="w3-left-align"><b>Contact</b></h3>
-    This dataset is hosted by xxxx. Please contact xxx for any question.
+    Please contact us at <a href="mailto:matterport3d@googlegroups.com">matterport3d@googlegroups.com</a> if you have any questions.
   </div>
 </div>
 
