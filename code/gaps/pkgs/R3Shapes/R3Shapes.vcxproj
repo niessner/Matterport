@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CCFB21C7-0922-4C29-B1AC-4D33094EBE06}</ProjectGuid>
+    <RootNamespace>R3Shapes</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)/$(Configuration)/$(ProjectName)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)/$(Configuration)/$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)/$(Configuration)/$(ProjectName)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)/$(Configuration)/$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4244;4267;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Lib>
+      <OutputFile>../../lib/win32/$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4244;4267;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Lib>
+      <OutputFile>../../lib/win32/$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="ply.cpp" />
+    <ClCompile Include="R3Affine.cpp" />
+    <ClCompile Include="R3Align.cpp" />
+    <ClCompile Include="R3Base.cpp" />
+    <ClCompile Include="R3Box.cpp" />
+    <ClCompile Include="R3Circle.cpp" />
+    <ClCompile Include="R3Cone.cpp" />
+    <ClCompile Include="R3Cont.cpp" />
+    <ClCompile Include="R3Crdsys.cpp" />
+    <ClCompile Include="R3Cylinder.cpp" />
+    <ClCompile Include="R3Dist.cpp" />
+    <ClCompile Include="R3Draw.cpp" />
+    <ClCompile Include="R3Ellipse.cpp" />
+    <ClCompile Include="R3Ellipsoid.cpp" />
+    <ClCompile Include="R3PlanarGrid.cpp" />
+    <ClCompile Include="R3Grid.cpp" />
+    <ClCompile Include="R3Halfspace.cpp" />
+    <ClCompile Include="R3Isect.cpp" />
+    <ClCompile Include="R3Kdtree.cpp" />
+    <ClCompile Include="R3Line.cpp" />
+    <ClCompile Include="R3Mesh.cpp" />
+    <ClCompile Include="R3MeshSearchTree.cpp" />
+    <ClCompile Include="R3MeshProperty.cpp" />
+    <ClCompile Include="R3MeshPropertySet.cpp" />
+    <ClCompile Include="R3OrientedBox.cpp" />
+    <ClCompile Include="R3Parall.cpp" />
+    <ClCompile Include="R3Perp.cpp" />
+    <ClCompile Include="R3Plane.cpp" />
+    <ClCompile Include="R3Point.cpp" />
+    <ClCompile Include="R3Quaternion.cpp" />
+    <ClCompile Include="R3Ray.cpp" />
+    <ClCompile Include="R3Relate.cpp" />
+    <ClCompile Include="R3Shape.cpp" />
+    <ClCompile Include="R3Shapes.cpp" />
+    <ClCompile Include="R3Solid.cpp" />
+    <ClCompile Include="R3Span.cpp" />
+    <ClCompile Include="R3Sphere.cpp" />
+    <ClCompile Include="R3Surface.cpp" />
+    <ClCompile Include="R3Triad.cpp" />
+    <ClCompile Include="R3Triangle.cpp" />
+    <ClCompile Include="R3TriangleArray.cpp" />
+    <ClCompile Include="R3Vector.cpp" />
+    <ClCompile Include="R3Xform.cpp" />
+    <ClCompile Include="R4Matrix.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ply.h" />
+    <ClInclude Include="R3Affine.h" />
+    <ClInclude Include="R3Align.h" />
+    <ClInclude Include="R3Base.h" />
+    <ClInclude Include="R3Box.h" />
+    <ClInclude Include="R3Circle.h" />
+    <ClInclude Include="R3Cone.h" />
+    <ClInclude Include="R3Cont.h" />
+    <ClInclude Include="R3Crdsys.h" />
+    <ClInclude Include="R3Cylinder.h" />
+    <ClInclude Include="R3Dist.h" />
+    <ClInclude Include="R3Draw.h" />
+    <ClInclude Include="R3Ellipse.h" />
+    <ClInclude Include="R3Ellipsoid.h" />
+    <ClInclude Include="R3PlanarGrid.h" />
+    <ClInclude Include="R3Grid.h" />
+    <ClInclude Include="R3Halfspace.h" />
+    <ClInclude Include="R3Isect.h" />
+    <ClInclude Include="R3Kdtree.h" />
+    <ClInclude Include="R3Line.h" />
+    <ClInclude Include="R3Mesh.h" />
+    <ClInclude Include="R3MeshSearchTree.h" />
+    <ClInclude Include="R3MeshProperty.h" />
+    <ClInclude Include="R3MeshPropertySet.h" />
+    <ClInclude Include="R3OrientedBox.h" />
+    <ClInclude Include="R3Parall.h" />
+    <ClInclude Include="R3Perp.h" />
+    <ClInclude Include="R3Plane.h" />
+    <ClInclude Include="R3Point.h" />
+    <ClInclude Include="R3Quaternion.h" />
+    <ClInclude Include="R3Ray.h" />
+    <ClInclude Include="R3Relate.h" />
+    <ClInclude Include="R3Shape.h" />
+    <ClInclude Include="R3Shapes.h" />
+    <ClInclude Include="R3Solid.h" />
+    <ClInclude Include="R3Span.h" />
+    <ClInclude Include="R3Sphere.h" />
+    <ClInclude Include="R3Surface.h" />
+    <ClInclude Include="R3Triad.h" />
+    <ClInclude Include="R3Triangle.h" />
+    <ClInclude Include="R3TriangleArray.h" />
+    <ClInclude Include="R3Vector.h" />
+    <ClInclude Include="R3Xform.h" />
+    <ClInclude Include="R4Matrix.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

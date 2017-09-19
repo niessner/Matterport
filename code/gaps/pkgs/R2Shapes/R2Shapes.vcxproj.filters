@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="R2Affine.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Align.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Arc.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Box.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Circle.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Cont.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Crdsys.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Curve.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Diad.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Dist.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Draw.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Grid.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Halfspace.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Image.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Io.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Isect.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Kdtree.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Line.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Parall.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Perp.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Point.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Polygon.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Ray.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Relate.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Shape.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Shapes.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Solid.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Span.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Vector.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R2Xform.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Matrix.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="R2Affine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Arc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Circle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Cont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Crdsys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Curve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Diad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Dist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Draw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Halfspace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Isect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Kdtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Parall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Perp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Polygon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Ray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Relate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Shape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Shapes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Solid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Span.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R2Xform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

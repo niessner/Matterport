@@ -1,0 +1,76 @@
+#
+# Makefile for GAPS packages
+#
+
+
+
+#
+# Before this Makefile is included ...
+#   $(NAME) should be module name
+#   $(CCSRCS) should list C++ source files
+#   $(CSRCS) should list C source files
+#
+# For example ...
+#   NAME=foo
+#   CCSRCS=$(NAME).cpp \
+#       foo1.cpp foo2.cpp foo3.cpp
+#   CSRCS=foo4.c foo5.c
+#
+
+
+#
+# Set up compiler options, etc.
+#
+
+include ../../makefiles/Makefile.std
+
+
+
+#
+# Set up target name
+#
+
+LIB=$(LIB_DIR)/lib$(NAME).a
+
+
+
+#
+# Make targets
+#
+
+opt:
+	    $(MAKE) $(LIB) "CFLAGS=$(OPT_CFLAGS)" 
+
+debug:
+	    $(MAKE) $(LIB) "CFLAGS=$(DEBUG_CFLAGS)" 
+
+mesa:
+	    $(MAKE) $(LIB) "CFLAGS=$(OPT_CFLAGS) -DUSE_MESA" 
+
+$(LIB):     $(CCSRCS) $(CSRCS) $(OSRCS) $(OBJS) $(DEPENDENCIES)
+	    mkdir -p $(LIB_DIR)
+	    rm -f $(LIB)
+	    ar ur $(LIB) $(OBJS) $(USER_OBJS)
+
+release:
+	    mkdir -p $(RELEASE_DIR)/pkgs
+	    mkdir $(RELEASE_DIR)/pkgs/$(NAME)1
+	    cp *\.[!o]* $(RELEASE_DIR)/pkgs/$(NAME)1
+	    cp Makefile $(RELEASE_DIR)/pkgs/$(NAME)1
+	    # cp $(NAME).vcxproj $(RELEASE_DIR)/pkgs/$(NAME)1
+	    rm -r -f $(RELEASE_DIR)/pkgs/$(NAME)
+	    mv $(RELEASE_DIR)/pkgs/$(NAME)1 $(RELEASE_DIR)/pkgs/$(NAME)
+
+clean:
+	    - rm -f *~ *.o $(LIB)
+
+
+
+#
+# Dependencies
+#
+
+$(OBJS) : Makefile *.h $(foreach pkg, $(PKG_DEPENDENCIES), ../$(pkg)/*.h) $(USER_DEPENDENCIES)
+
+
+

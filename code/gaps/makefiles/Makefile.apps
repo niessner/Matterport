@@ -1,0 +1,108 @@
+
+# Makefile for GAPS applications
+#
+
+
+
+#
+# Before this Makefile is included ...
+#   $(NAME) should be module name
+#   $(CCSRCS) should list C++ source files
+#   $(CSRCS) should list C source files
+#
+# For example ...
+#   NAME=foo
+#   CCSRCS=$(NAME).cpp \
+#       foo1.cpp foo2.cpp foo3.cpp
+#   CSRCS=foo4.c foo5.c
+#
+
+
+#
+# Set up compiler options, etc.
+#
+
+include ../../makefiles/Makefile.std
+
+
+
+
+#
+# Set up target app
+#
+
+EXE = $(EXE_DIR)/$(NAME)
+
+
+
+#
+# Set up link options
+#
+
+BASE_LDFLAGS=$(USER_LDFLAGS) -L$(LIB_DIR)
+DEBUG_LDFLAGS=$(BASE_LDFLAGS) -g
+OPT_LDFLAGS=$(BASE_LDFLAGS) -O 
+LDFLAGS=$(DEBUG_LDFLAGS)
+
+
+#
+# Set up libs
+#
+
+ifeq ("$(findstring CYGWIN,$(OS))", "CYGWIN")
+#OPENGL_LIBS=-lglut32 -lglu32 -lopengl32
+OPENGL_LIBS=-lfglut -lglu32 -lopengl32 -lwinmm -lgdi32
+else ifeq ("$(OS)","Darwin")
+OPENGL_LIBS=-framework GLUT -framework opengl
+else
+#OPENGL_LIBS=-lglut -lGLU -lGL -lX11 -lm
+OPENGL_LIBS=-lfglut -lGLU -lGL -lX11 -lm
+endif
+LIBS=$(PKG_LIBS) $(USER_LIBS) $(OPENGL_LIBS)
+
+
+
+#
+# Make targets
+#
+
+opt:
+	    $(MAKE) $(EXE) "CFLAGS=$(OPT_CFLAGS)" "LDFLAGS=$(OPT_LDFLAGS)"
+
+debug:
+	    $(MAKE) $(EXE) "CFLAGS=$(DEBUG_CFLAGS)" "LDFLAGS=$(DEBUG_LDFLAGS)"
+
+mesa:
+	    $(MAKE) $(EXE) "CFLAGS=$(OPT_CFLAGS) -DUSE_MESA" "LDFLAGS=$(OPT_LDFLAGS)" "LIBS=$(PKG_LIBS) $(USER_LIBS) -lOSMesa $(OPENGL_LIBS)"
+
+$(EXE):	    $(OBJS) $(LIB_DIR)/*.a
+	    mkdir -p $(EXE_DIR)
+	    $(CC) -o $(EXE) $(LDFLAGS) $(USER_OBJS) $(OBJS) $(LIBS)
+
+release:
+	    mkdir -p $(RELEASE_DIR)/apps
+	    mkdir $(RELEASE_DIR)/apps/$(NAME)1
+	    cp *\.[!o]* $(RELEASE_DIR)/apps/$(NAME)1
+	    cp Makefile $(RELEASE_DIR)/apps/$(NAME)1
+	    # cp $(NAME).vcxproj $(RELEASE_DIR)/apps/$(NAME)1
+	    rm -r -f $(RELEASE_DIR)/apps/$(NAME)
+	    mv $(RELEASE_DIR)/apps/$(NAME)1 $(RELEASE_DIR)/apps/$(NAME)
+
+clean:
+	    -  rm -f *~ *.o $(EXE)
+
+
+
+#
+# Dependencies
+#
+
+PKG_LIBS += $(foreach pkg, $(PKG_DEPENDENCIES), -l$(pkg))
+PKG_LIST=$(subst -l,,$(PKG_LIBS))
+$(OBJS) : Makefile $(wildcard *.h) $(foreach pkg, $(PKG_LIST), ../../pkgs/$(pkg)/*.h) $(USER_DEPENDENCIES)
+
+
+
+
+
+

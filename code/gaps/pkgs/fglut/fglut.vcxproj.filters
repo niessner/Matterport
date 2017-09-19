@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="freeglut_callbacks.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_cursor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_display.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_ext.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_font.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_glutfont_definitions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_font_data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_stroke_roman.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_stroke_mono_roman.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_gamemode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_geometry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_input_devices.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_spaceball.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_joystick.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_menu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_misc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_overlay.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_state.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_structure.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_teapot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_videoresize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeglut_window.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fglut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freeglut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freeglut_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freeglut_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freeglut_std.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freeglut_teapot_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="linux_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mac_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="windows_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fglut", "fglut.vcxproj", "{245FD70C-6B13-4581-B674-838551C69144}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{245FD70C-6B13-4581-B674-838551C69144}.Debug|Win32.ActiveCfg = Debug|Win32
+		{245FD70C-6B13-4581-B674-838551C69144}.Debug|Win32.Build.0 = Debug|Win32
+		{245FD70C-6B13-4581-B674-838551C69144}.Release|Win32.ActiveCfg = Release|Win32
+		{245FD70C-6B13-4581-B674-838551C69144}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
