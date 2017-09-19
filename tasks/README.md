@@ -1,4 +1,4 @@
-# Benchmark Task Data
+# Benchmark Tasks
 
 ## Image Keypoint Matching
 The image keypoint matching task aims to establish correspondences between keypoints in RGB image data.   It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data. Please check [keypoint_match](keypoint_match).
