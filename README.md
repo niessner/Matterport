@@ -5,7 +5,7 @@ This repository includes the raw data for the dataset plus derived data, annotat
 
 ## Downloading
 
-You must indicate that you agree to the terms of use by signing the [Terms of Use](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf) and sending the signed form to: `matterport3d@googlegroups.com`.  We will then provide download access to the dataset.
+You must indicate that you agree to the terms of use by signing the [Terms of Use](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf) agreement form and sending it to: [matterport3d@googlegroups.com](mailto:matterport3d@googlegroups.com).  We will then provide download access to the dataset.
 
 ## [Data organization](data_organization.md)
 
