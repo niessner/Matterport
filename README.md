@@ -344,21 +344,4 @@ vertices of a mesh and counting the number of vertices visible in both images
   iiv - a vertex of a mesh visible at pixel i is also visible in image j
 
 
-Benchmark Task Data
-=======================
-
-**Image Keypoint Matching**  
-The image keypoint matching task aims to establish correspondences between keypoints in RGB image data.   It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data. Please see [keypoint_match] (tasks/keypoint_match).
-
-**View Overlap Prediction**  
-The view overlap prediction task aims to predict how much the views of two images overlap (what fraction of the visible surfaces are shared between the views).  It leverages the wide variety of camera baselines in the Matterport3D dataset as training and test data.  Please check [tasks/view_overlap](tasks/view_overlap) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [here](tasks/view_overlap/readme.md) for how to download  the data and run the scripts for this task.
-
-**Surface Normal Estimation**  
-The surface normal estimation task aims toi predict pixelwise surface normals from RGB images.   It leverages normals estimated from the vast number of RGB-D image pairs in the Matterport3D dataset as training and testing data.  Please check [tasks/surface_normal](tasks/surface_normal) for train/test codes, pretrained models, and auxiliary data for the experiments. Note that to run the experiments for surface normal estimation, you don't need to download the whole dataset. Please see [here](tasks/surface_normal/readme.md) for how to download the data and run the scripts for this task.
-
-**Semantic Voxel Labeling**  
-The semantic voxel labeling task predicts per-voxel class labels for a scan. Please see [tasks/semantic_voxel_label](tasks/semantic_voxel_label).
-
-**Room-Type Categorization**  
-The room type categorization task aims to predict the semantic category of the region (e.g., bedroom, kitchen, patio, etc.) containing the camera viewpoint of an RGB image or panorama.   It leverages semantic boundaries and labels for manually-specified regions in the Matterport3D dataset.  Please check [tasks/room_categorization](tasks/room_categorization) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [here](tasks/room_categorization/readme.md) for how to download the data and run the scripts for this task.
-
+## [Benchmark Task Data](tasks/README.md)
