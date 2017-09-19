@@ -11,7 +11,6 @@ NAME=RGBD
 #
 
 CCSRCS=RGBD.cpp \
-    RGBDSegmentation.cpp \
     RGBDTransform.cpp \
     RGBDConfiguration.cpp \
     RGBDSurface.cpp RGBDImage.cpp \
