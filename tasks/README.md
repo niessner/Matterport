@@ -12,5 +12,5 @@ The surface normal estimation task aims toi predict pixelwise surface normals fr
 ## Semantic Voxel Labeling
 The semantic voxel labeling task predicts per-voxel class labels for a scan. Please see [semantic_voxel_label](semantic_voxel_label).
 
-## Room-Type Categorization  
-The room type categorization task aims to predict the semantic category of the region (e.g., bedroom, kitchen, patio, etc.) containing the camera viewpoint of an RGB image or panorama.   It leverages semantic boundaries and labels for manually-specified regions in the Matterport3D dataset.  Please check [room_categorization](room_categorization) for train/test codes, pretrained models, and auxiliary data for the experiments.  Please see [here](room_categorization/readme.md) for how to download the data and run the scripts for this task.
+## Region Classification  
+The region classification task aims to predict the semantic category of the region (e.g., bedroom, kitchen, patio, etc.) containing the camera viewpoint of an RGB image or panorama.   It leverages semantic boundaries and labels for manually-specified regions in the Matterport3D dataset.  Please check [region_classification](region_classification) for how to download the data and run the script for the task (all train/test code, pretrained models, and auxiliary data for the experiments are provided).
