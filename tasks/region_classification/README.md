@@ -1,4 +1,4 @@
-# Matterport3D Room Classification
+# Matterport3D Region Classification
 
 ## Requirements
 - Install [Torch](http://torch.ch/docs/getting-started.html) on a machine with CUDA GPU
