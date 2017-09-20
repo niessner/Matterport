@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RNArray.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNBase.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNBasics.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNError.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNFlags.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNGrfx.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNHeap.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNIntval.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNMem.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNQueue.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNRgb.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNScalar.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNSvd.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNTime.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNType.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RNArray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNBasics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNCompat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNExtern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNGrfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNIntval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNMem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNRgb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNScalar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNSvd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNTime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RNArray.I">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="RNGrfx.I">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="RNQueue.I">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

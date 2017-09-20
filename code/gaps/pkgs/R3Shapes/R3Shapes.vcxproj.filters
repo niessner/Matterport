@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ply.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Affine.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Align.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Base.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Box.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Circle.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Cone.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Cont.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Crdsys.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Cylinder.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Dist.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Draw.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Ellipse.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Ellipsoid.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Grid.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Halfspace.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Isect.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Kdtree.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Line.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Mesh.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3MeshSearchTree.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3MeshProperty.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3MeshPropertySet.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3OrientedBox.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Parall.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Perp.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Plane.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Point.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Quaternion.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Ray.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Relate.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Shape.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Shapes.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Solid.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Span.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Sphere.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Surface.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Triad.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Triangle.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3TriangleArray.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Vector.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3Xform.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R4Matrix.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ply.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Affine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Circle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Cone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Cont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Crdsys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Cylinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Dist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Draw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Ellipse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Ellipsoid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Halfspace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Isect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Kdtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3MeshSearchTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3MeshProperty.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3MeshPropertySet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3OrientedBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Parall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Perp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Plane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Quaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Ray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Relate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Shape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Shapes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Solid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Span.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Surface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Triad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Triangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3TriangleArray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3Xform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R4Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
