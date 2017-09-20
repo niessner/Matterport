@@ -174,9 +174,12 @@ where (vx, vy, vz) is the eye viewpoint of the camera, (tx, ty, tz) is the view 
 
 house_segmentations
 ---------------------
-A manually specified decomposition of a house into levels, room-like regions, and objects with semantic labels.   The data for each house xxx is represented in four files:
+A manually specified decomposition of a house into levels, room-like regions, and objects with semantic labels.
 
-    xxx.house = ascii file containing a list of regions, objects, etc.  The .house file has a sequence of ascii lines with fields separated by spaces in the following format:
+The data for each house xxx is represented in four files:
+
+    xxx.house = ascii file containing a list of regions, objects, etc.
+        The .house file has a sequence of ascii lines with fields separated by spaces in the following format:
 
         H name label #images #panoramas #vertices #surfaces #segments #objects #categories #regions #portals #levels  0 0 0 0 0  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
         L level_index #regions label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
@@ -186,11 +189,27 @@ A manually specified decomposition of a house into levels, room-like regions, an
         V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
         P name  panorama_index region_index 0  px py pz  0 0 0 0 0
         I image_index panorama_index  name camera_index yaw_index e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33  i00 i01 i02  i10 i11 i12 i20 i21 i22  width height  px py pz  0 0 0 0 0
-        C category_index label_id label_name mpcat40_id mpcat40_name 0 0 0 0 0
+        C category_index category_mapping_index category_mapping_name mpcat40_index mpcat40_name 0 0 0 0 0
         O object_index region_index category_index px py pz  a0x a0y a0z  a1x a1y a1z  r0 r1 r2 0 0 0 0 0 0 0 0 
         E segment_index object_index id area px py pz xlo ylo zlo xhi yhi zhi  0 0 0 0 0
    
-        where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, camera_index is in [0-5], yaw_index is in [0-2], (e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33) are the extrinsic matrix of a camera, (i00 i01 i02  i10 i11 i12 i20 i21 i22) are the intrinsic matrix for a camera, (px, py, pz, a0x, a0y, a0z, a1x, a1y, a1z, r0, r1, r2) define the center, axis directions, and radii of an oriented bounding box, and 0 is a value that can be ignored.   The extent of each region is defined by a prism with its vertical extent dictated by its heigh and its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with each surface assocated with the region.
+        where xxx_index indicates the index of the xxx in the house file (starting at 0),
+        #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry,
+        (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction,
+        (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box,
+        camera_index is in [0-5], yaw_index is in [0-2],
+        (e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33) are the extrinsic matrix of a camera,
+        (i00 i01 i02  i10 i11 i12 i20 i21 i22) are the intrinsic matrix for a camera,
+        (px, py, pz, a0x, a0y, a0z, a1x, a1y, a1z, r0, r1, r2) define the center, axis directions, and radii of an oriented bounding box, and
+        0 is a value that can be ignored.
+
+        The extent of each region is defined by a prism with its vertical extent dictated by its height and
+        its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated
+        with each surface assocated with the region.
+
+        The extent of each object is defined by the oriented bounding box of the 'O' command.
+        The set of faces associated with each segment are ones whose 'face_material' field
+        in the xxx.ply file (described next) matches the segment 'id' in the 'S' command.
 
     xxx.ply = 3D mesh in ply format.   In addition to the usual fields, there are three additional fields for each face:
         face_material = unique id of segment containing this face
@@ -209,7 +228,7 @@ A manually specified decomposition of a house into levels, room-like regions, an
         segments = an array containing the unique ids for all segments in this object instance
                 (the unique ids for segments map to ones found in regionX.fsegs.json)
 
-The label of each region is a string with the following conventions:
+The 'label' of each region is a string with the following conventions:
 
     'a' = bathroom (should have a toilet and a sink)
     'b' = bedroom
@@ -242,13 +261,16 @@ The label of each region is a string with the following conventions:
     'S' = spa/sauna
     'Z' = junk (reflections of mirrors, random points floating in space, etc.)
     '-' = no label 
-    
-    
+
+The label of each object is defined by its category index.   For each category, the .house file provides a category_mapping_index, category_mapping_name, mcat40_index, and mcat40_name.   The category_mapping_index maps into the first column of [metadata/category_mapping.tsv](metadata/category_mapping.tsv).  Further information these object categories (including how they map to WordNet synsets) can be
+found in [metadata/category_mapping.tsv](metadata/category_mapping.tsv).  The mpcat40_index maps into the first column of [metadata/mpcat40.tsv](metadata/mpcat40_index), which provides further information about them (including a standard color to display for each one).
+
+
 region_segmentations
 ---------------------
 A set of manually specified segment, object instance, and semantic category labels for walls, floors, ceilings, doors, windows, and "furniture-sized" objects for each region of each house. 
 
-The segmentations and labels are provided as annotations on 3D meshes.   A ply file provides the raw geometry for each region.   Json files indicate how each triangle of the mesh is associated with a "segment", how segments are associated with object instances, and, how object instances are associated with semantic categories as follows:
+The region_segmentations and labels are provided as annotations on 3D meshes.   A ply file provides the raw geometry for each region.   Json files indicate how each triangle of the mesh is associated with a "segment", how segments are associated with object instances, and, how object instances are associated with semantic categories as follows (this is the same as for house_segmentations):
 
     regionX.ply = 3D mesh in ply format.   In addition to the usual fields, there are three additional fields for each face:
         face_material = unique id of segment containing this face
