@@ -1,4 +1,6 @@
-# Matterport3D Region Classification
+# Region Classification
+
+In this task we predict the semantic category for each region within a house.
 
 ## Requirements
 - Install [Torch](http://torch.ch/docs/getting-started.html) on a machine with CUDA GPU

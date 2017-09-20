@@ -13,7 +13,8 @@ public:
   // Constructors/destructors
   RGBDImage(void);
   RGBDImage(const char *color_filename, const char *depth_filename,
-    const R3Matrix& intrinisics, const R4Matrix& extrinsics);
+    const R3Matrix& intrinisics, const R4Matrix& extrinsics,
+    int width = 0, int height = 0);
   virtual ~RGBDImage(void);
 
   // Configuration access functions
@@ -61,6 +62,7 @@ public:
   const R3Matrix& Intrinsics(void) const;
 
   // Manipulation functions
+  virtual void SetNPixels(int nx, int ny);
   virtual void SetPixelColor(int ix, int iy, const RNRgb& color);
   virtual void SetPixelDepth(int ix, int iy, RNScalar depth);
   virtual void SetPixelChannelValue(int ix, int iy, int channel_index, RNScalar value);

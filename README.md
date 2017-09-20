@@ -1,11 +1,12 @@
 # Matterport3D
 
+![Matterport3d](img/teaser.jpg)
+
 The Matterport3D V1.0 dataset contains data captured throughout 90 properties with a Matterport Pro Camera.
 
 This repository includes the raw data for the dataset plus derived data, annotated  data, and scripts/models for several scene understanding tasks.
 
 Visit the main [website](https://niessner.github.io/Matterport) for updates and to browse the data.
-
 
 ## Paper
 
