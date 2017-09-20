@@ -7,7 +7,7 @@ mpview is a C++ application for parsing and viewing houses in the Matterport3D d
 The mpview application can be invoked by simplying typing "mpview -input_house house_segmentations/xxx.house -v".   However, it also supports control over how input files are parsed and how data is displayed on startup as follows:   
 
     Usage: mpview [options]
-      -input_house <filename> : input region segmentations file (e.g., xxx/region_segmentations/xxx.house)
+      -input_house <filename> : input house segmentations file (e.g., xxx/house_segmentations/xxx.house)
       -input_scene <filename> : input textured mesh (e.g., xxx/matterport_mesh/*/*.obj)
       -input_mesh <filename> : input poisson mesh (e.g., xxx/poisson_meshes/xxx_11.ply)
       -input_categories <filename> : input categories tsv file (e.g., metadata/*.tsv)
