@@ -154,7 +154,10 @@ Note that all images have their origins in the bottom-left of the image.
 
 poisson_meshes
 ---------------------
-Surface meshes reconstructed from the depth images using [Screened Poisson Surface Reconstruction](http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version9.01/).
+Surface meshes reconstructed from the depth images using [Screened Poisson Surface Reconstruction](http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version9.01/).  xxx.ply provides a mesh that has been simplified to a reasonable polygon count (e.g., 500K) and thus provides a plausible trade-off between accuracy and size.
+
+Additionally, three meshes are provided corresponding to different depth levels of the poisson surface reconstruction (e.g., xxx_9.ply corresponds to depth 9, xxx_10.ply corresponds to depth 10, etc.).   Higher depths correspond to finer resolution meshes.    
+
 The files are binary PLY format. 
 
 
