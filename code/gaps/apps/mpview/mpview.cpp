@@ -92,19 +92,25 @@ PrintUsage(void)
 {
   printf("Usage: mpview [inputfiles] [options]\n");
   printf("Options:\n");
-  printf("  -house <filename> : input region segmentations file (e.g., xxx/region_segmentations/xxx.house)\n");
-  printf("  -scene <filename> : input textured mesh (e.g., xxx/matterport_mesh/*/*.obj)\n");
-  printf("  -mesh <filename> : input poisson mesh (e.g., xxx/poisson_meshes/xxx_11.ply)\n");
-  printf("  -categories <filename> : input categories tsv file (e.g., metadata/*.tsv)\n");
-  printf("  -segments <filename> : input json file with face segments (e.g., xxx/object_segmentations/*.fsegs.json)\n");
-  printf("  -objects <filename> : input json file with objects and labels (e.g., xxx/object_segmentations/*.semseg.json)\n");
-  printf("  -configuration <filename> : input file with images and panorama (e.g., xxx/undistorted_camera_parameters/xxx.conf)\n");
+  printf("  -input_house <filename> : input region segmentations file (e.g., xxx/region_segmentations/xxx.house)\n");
+  printf("  -input_scene <filename> : input textured mesh (e.g., xxx/matterport_mesh/*/*.obj)\n");
+  printf("  -input_mesh <filename> : input poisson mesh (e.g., xxx/poisson_meshes/xxx_11.ply)\n");
+  printf("  -input_categories <filename> : input categories tsv file (e.g., metadata/*.tsv)\n");
+  printf("  -input_segments <filename> : input json file with face segments (e.g., xxx/object_segmentations/*.fsegs.json)\n");
+  printf("  -input_objects <filename> : input json file with objects and labels (e.g., xxx/object_segmentations/*.semseg.json)\n");
+  printf("  -input_configuration <filename> : input file with images and panorama (e.g., xxx/undistorted_camera_parameters/xxx.conf)\n");
   printf("  -output_image <filename> : save an image to <filename> and exit\n");
   printf("  -background <r> <g> <b> : background color (with each component in [0.0-1.0])\n");
   printf("  -window <width> <height> : window size in pixels\n");
   printf("  -camera <ex> <ey> <ez> <tx> <ty> <tz> <ux> <uy> <uz> : initial camera extrinsics\n");
   printf("  -batch : exit without starting interactive viewer\n");
   printf("  -v : print verbose (recommended)\n");
+  printf("\n");
+  printf("Typical usage for viewing house segmentations:\n");
+  printf("  cd scans/17DRP5sb8fy (or any other house)\n");
+  printf("  mpview -input_house house_segmentations/*.house -v   OR \n");
+  printf("  mpview -input_house house_segmentations/*.house -input_scene matterport_mesh/*/*.obj -v   OR\n");
+  printf("  mpview -input_house house_segmentations/*.house -input_mesh house_segmentations/*.ply -v\n");
   printf("\n");
 }
 
@@ -114,12 +120,21 @@ static void
 PrintCommands(void)
 {
   // Print info about the user interface
+  printf("\n");
   printf("Camera control:\n");
   printf("    Left-mouse drag = rotate\n");
   printf("    Right-mouse drag = pan\n");
   printf("    Middle-mouse drag = zoom\n");
   printf("    Thumbwheel = zoom\n");
   printf("    Left-mouse click = set the center of zooming and rotating to picked surface point\n");
+  printf("\n");
+  printf("Camera control:\n");
+  printf("    Left-button-drag = rotate the camera view \n");
+  printf("    Middle-button-drag = zoom the camera view\n");
+  printf("    Right-button-drag = pan the camera view\n");
+  printf("    Scroll-wheel = zoom the camera view\n");
+  printf("    Left-click = set the center of rotation and zooming\n");
+  printf("    PAGE UP/DOWN = match the camera parameters to the next/prev image\n");
   printf("\n");
   printf("Clipbox control:\n");
   printf("    Up-arrow = move top of clipbox up\n");
@@ -131,21 +146,24 @@ PrintCommands(void)
   printf("\n");
   printf("Display options:\n");
   printf("    A = toggle display of Cartesian axes\n");
-  printf("    B = toggle display of clip box\n");
-  printf("    C = cycle through different coloring modes\n");
+  printf("    B = toggle display of bounding boxes\n");
+  printf("    C = toggle display of image viewpoints\n");
   printf("    E = toggle display of edges (wireframe)\n");
   printf("    F = toggle display of faces\n");
-  printf("    I = toggle display of image viewpoints\n");
+  printf("    H = print this list of commands\n");
+  printf("    I = toggle display of images\n");
   printf("    M = toggle display of mesh\n");
   printf("    O = toggle display of objects\n");
   printf("    P = toggle display of panorama centers\n");
   printf("    R = toggle display of regions\n");
   printf("    S = toggle display of scene\n");
   printf("    V = toggle display of vertices\n");
+  printf("    X = toggle display of clip box (only clips if visible)\n");
+  printf("    SPACE = cycles through different colors schemes\n");
   printf("\n");
   printf("Query commands:\n");
-  printf("    Left-mouse double-click = print information about what is under cursor to stdout\n");
-  printf("    ' ' = print this list of commands\n");
+  printf("    Left-button-click = select a region, object, or image\n");
+  printf("    Left-button-double-click = print information about what is under cursor to stdout\n");
   printf("\n");
   printf(" Quit:\n");
   printf("    Ctrl-Q = quit \n");
