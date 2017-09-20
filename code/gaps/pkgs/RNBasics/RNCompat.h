@@ -101,9 +101,9 @@ Compatability definitions
 #   define _BSD_COMPAT
 #endif
 
-// #if (RN_CC == RN_GCC)
-// #   pragma GCC diagnostic ignored "-Wunused-result"
-// #endif
+#if (RN_CC == RN_GCC)
+#   pragma GCC diagnostic ignored "-Wunused-result"
+#endif
 
 #if 0
 #if (RN_CC == RN_MSVC)
