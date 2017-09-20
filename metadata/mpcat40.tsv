@@ -1,0 +1,43 @@
+mpcat40index	mpcat40	hex	wnsynsetkey	nyu40	skip	labels
+0	void	#ffffff		void		remove,void
+1	wall	#aec7e8	wall.n.01,baseboard.n.01,paneling.n.01	wall		wallpaper
+2	floor	#708090	floor.n.01,rug.n.01,mat.n.01,bath_mat.n.01,landing.n.01	floor,floor mat		
+3	chair	#98df8a	chair.n.01,beanbag.n.01	chair		
+4	door	#c5b0d5	door.n.01,doorframe.n.01,doorway.n.01,doorknob.n.01,archway.n.01	door		garage door
+5	table	#ff7f0e	table.n.02,dressing.n.04	table,desk	counter.n.01	
+6	picture	#d62728	picture.n.01,photograph.n.01,picture_frame.n.01	picture		
+7	cabinet	#1f77b4	cabinet.n.01,cupboard.n.01	cabinet		
+8	cushion	#bcbd22	cushion.n.03	pillow		couch cushion
+9	window	#ff9896	window.n.01,windowsill.n.01,window_frame.n.01,windowpane.n.02,window_screen.n.01	window		
+10	sofa	#2ca02c	sofa.n.01	sofa		
+11	bed	#e377c2	bed.n.01,bedpost.n.01,bedstead.n.01,headboard.n.01,footboard.n.01,bedspread.n.01,mattress.n.01,sheet.n.03	bed		
+12	curtain	#de9ed6	curtain.n.01	curtain,shower curtain		curtain rod,shower curtain rod,shower rod
+13	chest_of_drawers	#9467bd	chest_of_drawers.n.01,drawer.n.01	dresser,night stand		
+14	plant	#8ca252	plant.n.02			
+15	sink	#843c39	sink.n.01	sink		
+16	stairs	#9edae5	step.n.04,stairway.n.01,stairwell.n.01			
+17	ceiling	#9c9ede	ceiling.n.01,roof.n.01	ceiling		
+18	toilet	#e7969c	toilet.n.01,bidet.n.01	toilet		
+19	stool	#637939	stool.n.01			
+20	towel	#8c564b	towel.n.01	towel		
+21	mirror	#dbdb8d	mirror.n.01	mirror		
+22	tv_monitor	#d6616b	display.n.06	television		
+23	shower	#cedb9c	shower.n.01,showerhead.n.01			
+24	column	#e7ba52	column.n.07,post.n.04			
+25	bathtub	#393b79	bathtub.n.01	bathtub		
+26	counter	#a55194	countertop.n.01,counter.n.01,kitchen_island.n.01	counter		
+27	fireplace	#ad494a	fireplace.n.01,mantel.n.01			
+28	lighting	#b5cf6b	lamp.n.02,lampshade.n.01,light.n.02,chandelier.n.01,spotlight.n.02	lamp		
+29	beam	#5254a3	beam.n.02			
+30	railing	#bd9e39	railing.n.01,bannister.n.02			
+31	shelving	#c49c94	bookshelf.n.01,shelf.n.01,rack.n.05	shelves		
+32	blinds	#f7b6d2	window_blind.n.01	blinds		
+33	gym_equipment	#6b6ecf	sports_equipment.n.01,treadmill.n.01,exercise_bike.n.01			
+34	seating	#ffbb78	bench.n.01,seat.n.03			
+35	board_panel	#c7c7c7	panel.n.01	whiteboard		board
+36	furniture	#8c6d31	furniture.n.01	otherfurniture		
+37	appliances	#e7cb94	home_appliance.n.01,stove.n.02,dryer.n.01	refridgerator		washing machine and dryer
+38	clothes	#ce6dbd	clothing.n.01	clothes		
+39	objects	#17becf	physical_object.n.01,material.n.01	books,paper,box,bag,otherprop	structure.n.01,way.n.06,vent.n.01,unknown.n.01,pool.n.01	
+40	misc	#7f7f7f		person,otherstructure	unknown.n.01	
+41	unlabeled	#000000	unknown.n.01			unknown
