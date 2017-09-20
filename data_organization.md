@@ -263,7 +263,7 @@ The 'label' of each region is a string with the following conventions:
     '-' = no label 
 
 The label of each object is defined by its category index.   For each category, the .house file provides a category_mapping_index, category_mapping_name, mcat40_index, and mcat40_name.   The category_mapping_index maps into the first column of [metadata/category_mapping.tsv](metadata/category_mapping.tsv).  Further information these object categories (including how they map to WordNet synsets) can be
-found in [metadata/category_mapping.tsv](metadata/category_mapping.tsv).  The mpcat40_index maps into the first column of [metadata/mpcat40.tsv](metadata/mpcat40_index), which provides further information about them (including a standard color to display for each one).
+found in [metadata/category_mapping.tsv](metadata/category_mapping.tsv).  The mpcat40_index maps into the first column of [metadata/mpcat40.tsv](metadata/mpcat40.tsv), which provides further information about them (including a standard color to display for each one).
 
 
 region_segmentations
