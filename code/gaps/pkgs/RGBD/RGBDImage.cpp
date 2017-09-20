@@ -38,11 +38,12 @@ RGBDImage(void)
 
 RGBDImage::
 RGBDImage(const char *color_filename, const char *depth_filename,
-  const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix)
+  const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix,
+  int width, int height)
   : configuration(NULL),
     configuration_index(-1),
     channels(),
-    width(0), height(0),
+    width(width), height(height),
     camera_to_world(camera_to_world_matrix, 0),
     intrinsics(intrinsics_matrix),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
@@ -283,6 +284,25 @@ PixelWorldRay(const R2Point& image_position) const
 ////////////////////////////////////////////////////////////////////////
 // Manipulation functions
 ////////////////////////////////////////////////////////////////////////
+
+void RGBDImage::
+SetNPixels(int nx, int ny)
+{
+  // Set width and height of image
+  this->width = nx;
+  this->height = ny;
+
+  // Resample all channels
+  for (int i = 0; i < channels.NEntries(); i++) {
+    R2Grid *channel = channels.Kth(i);
+    if (channel) channel->Resample(nx, ny);
+  }
+
+  // Invalidate opengl
+  InvalidateOpenGL();
+}
+
+
 
 void RGBDImage::
 SetPixelColor(int ix, int iy, const RNRgb& color)
@@ -623,6 +643,8 @@ DrawImage(int color_scheme, RNLength depth) const
   R3Point c = viewpoint + depth * towards;
   R3Vector dx = (depth * 0.5*width / intrinsics[0][0]) * right;
   R3Vector dy = (depth * 0.5*height / intrinsics[1][1]) * up;
+  c -= dx*(intrinsics[0][2] - 0.5*width)/width;
+  c -= dy*(intrinsics[1][2] - 0.5*height)/height;
 
   // Update/select opengl texture
   if (opengl_texture_id <= 0) ((RGBDImage *) this)->UpdateOpenGL();

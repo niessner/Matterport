@@ -64,11 +64,6 @@ LoadIndex(int index, int tag)
 static void
 LoadColor(int k)
 {
-#if 0
-  if (k == -1) glColor3d(0.8, 0.8, 0.8);
-  else if (k == 0) glColor3d(0.5, 0.5, 0.5);
-  else glColor3d((k%13)/12.0, (k%7)/6.0, (k%3)/2.0);
-#else
   // Make array of colors
   const int ncolors = 72;
   const RNRgb colors[ncolors] = {
@@ -102,7 +97,6 @@ LoadColor(int k)
   if (k == -1) glColor3d(0.8, 0.8, 0.8);
   else if (k == 0) RNLoadRgb(colors[0]);
   else RNLoadRgb(colors[1 + (k % (ncolors-1))]);
-#endif
 }
 
 
@@ -129,6 +123,7 @@ MPImage(void)
     name(NULL),
     camera_index(-1),
     yaw_index(-1),
+    rgbd(),
     extrinsics(1,0,0,0,0,1,0,0, 0,0,1,0,0,0,0,1),
     intrinsics(1,0,0,0,1,0,0,0,1),
     width(0), height(0),
@@ -167,10 +162,13 @@ Draw(RNFlags draw_flags) const
     LoadColor(panorama->region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_IMAGE_TAG);
-  else glColor3d(0,1,0);
 
   // Draw this
   if (draw_flags[MP_SHOW_IMAGES] && draw_flags[MP_DRAW_DEPICTIONS]) DrawCamera(draw_flags);
+  if (draw_flags[MP_SHOW_IMAGES] && draw_flags[MP_DRAW_BBOXES]) DrawBBox(draw_flags);
+  if (draw_flags[MP_SHOW_IMAGES] && draw_flags[MP_DRAW_FACES]) DrawQuads(draw_flags);
+  if (draw_flags[MP_SHOW_IMAGES] && draw_flags[MP_DRAW_VERTICES]) DrawPoints(draw_flags);
+  if (draw_flags[MP_SHOW_IMAGES] && draw_flags[MP_DRAW_IMAGES]) DrawImage(draw_flags);
 }
 
 
@@ -178,6 +176,7 @@ Draw(RNFlags draw_flags) const
 void MPImage::
 DrawCamera(RNFlags draw_flags) const
 {
+#if 0
   // Determine camera parameters in world coordinates
   R4Matrix camera_to_world = extrinsics.Inverse();
   R3Point eye = camera_to_world * R3zero_point;
@@ -188,6 +187,48 @@ DrawCamera(RNFlags draw_flags) const
   glDisable(GL_LIGHTING);
   R3Span(eye, eye+0.5*towards).Draw();
   R3Span(eye, eye+0.3*up).Draw();
+#else
+  rgbd.DrawCamera(0);
+#endif
+}
+
+
+
+void MPImage::
+DrawBBox(RNFlags draw_flags) const
+{
+  // Draw bounding box
+  glDisable(GL_LIGHTING);
+  rgbd.DrawBBox(0);
+}
+
+
+
+void MPImage::
+DrawPoints(RNFlags draw_flags) const
+{
+  // Draw points
+  glDisable(GL_LIGHTING);
+  rgbd.DrawPoints(RGBD_PHOTO_COLOR_SCHEME);
+}
+
+
+
+void MPImage::
+DrawQuads(RNFlags draw_flags) const
+{
+  // Draw points
+  glEnable(GL_LIGHTING);
+  rgbd.DrawQuads(RGBD_RENDER_COLOR_SCHEME);
+}
+
+
+
+void MPImage::
+DrawImage(RNFlags draw_flags) const
+{
+  // Draw image
+  rgbd.DrawImage(RGBD_PHOTO_COLOR_SCHEME, 0.25);
 }
 
 
@@ -262,7 +303,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_PANORAMA_TAG);
-  else glColor3d(0, 1, 1);
 
   // Draw this
   if (draw_flags[MP_SHOW_PANORAMAS] && draw_flags[MP_DRAW_DEPICTIONS]) DrawPosition(draw_flags);
@@ -278,7 +318,8 @@ void MPPanorama::
 DrawPosition(RNFlags draw_flags) const
 {
   // Draw sphere at position
-  glEnable(GL_LIGHTING);
+  if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+  else glEnable(GL_LIGHTING);
   R3Sphere(position, 0.2).Draw();
 }
 
@@ -357,7 +398,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(object->region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_SEGMENT_TAG);
-  else glColor3d(0.6,0.6,0.6);
 
   // Draw this
   if (draw_flags[MP_SHOW_SEGMENTS] && draw_flags[MP_DRAW_FACES | MP_DRAW_EDGES | MP_DRAW_VERTICES]) DrawMesh(draw_flags);
@@ -374,7 +414,8 @@ DrawMesh(RNFlags draw_flags) const
 
   // Draw faces
   if (draw_flags & MP_DRAW_FACES) {
-    glEnable(GL_LIGHTING);
+    if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+    else glEnable(GL_LIGHTING);
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < faces.NEntries(); i++) {
       R3MeshFace *face = faces.Kth(i);
@@ -510,7 +551,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_OBJECT_TAG);
-  else glColor3d(1,0,1);
 
   // Draw this
   if (draw_flags[MP_SHOW_OBJECTS] && draw_flags[MP_DRAW_BBOXES]) DrawBBox(draw_flags);
@@ -651,8 +691,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(surface->label);
   else if ((draw_flags & MP_COLOR_BY_LABEL) && (draw_flags & MP_COLOR_BY_REGION) && surface && surface->region)
     LoadColor(surface->region->label);
-  if ((draw_flags & MP_COLOR_BY_INDEX) && (draw_flags & MP_COLOR_BY_VERTEX))
-    LoadColor(house_index + 1);
   else if ((draw_flags & MP_COLOR_BY_INDEX) && (draw_flags & MP_COLOR_BY_SURFACE) && surface)
     LoadColor(surface->house_index + 1);
   else if ((draw_flags & MP_COLOR_BY_INDEX) && (draw_flags & MP_COLOR_BY_REGION) && surface && surface->region)
@@ -661,7 +699,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(surface->region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_VERTEX_TAG);
-  else glColor3d(0,0,1);
 
   // Draw this
   if (draw_flags[MP_SHOW_VERTICES] && draw_flags[MP_DRAW_DEPICTIONS]) DrawPosition(draw_flags);
@@ -673,7 +710,8 @@ void MPVertex::
 DrawPosition(RNFlags draw_flags) const
 {
   // Draw sphere at position
-  glEnable(GL_LIGHTING);
+  if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+  else glEnable(GL_LIGHTING);
   R3Sphere(position, 0.1).Draw();
 }
 
@@ -786,7 +824,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(region->level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_SURFACE_TAG);
-  else glColor3d(0.3, 0.5, 0.7);
 
   // Draw this
   if (draw_flags[MP_SHOW_SURFACES] && draw_flags[MP_DRAW_FACES | MP_DRAW_EDGES | MP_DRAW_VERTICES]) DrawPolygon(draw_flags);
@@ -799,7 +836,8 @@ DrawPolygon(RNFlags draw_flags) const
 {
   // Draw faces
   if (draw_flags & MP_DRAW_FACES) {
-    glEnable(GL_LIGHTING);
+    if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+    else glEnable(GL_LIGHTING);
     R3LoadNormal(normal);
     GLUtesselator *tess = gluNewTess();
     gluTessCallback(tess, GLU_TESS_BEGIN, (void (*)()) glBegin);
@@ -1045,7 +1083,6 @@ Draw(RNFlags draw_flags) const
     LoadColor(level->house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_REGION_TAG);
-  else glColor3d(0.1, 0.7, 0.3);
 
   // Draw this
   if (draw_flags[MP_SHOW_REGIONS] && draw_flags[MP_DRAW_DEPICTIONS])
@@ -1068,7 +1105,8 @@ void MPRegion::
 DrawPosition(RNFlags draw_flags) const
 {
   // Draw a sphere at position
-  glEnable(GL_LIGHTING);
+  if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+  else glEnable(GL_LIGHTING);
   R3Sphere(position, 0.2).Draw(R3_SURFACES_DRAW_FLAG);
 }
 
@@ -1200,12 +1238,18 @@ Draw(RNFlags draw_flags) const
 {
   // Set the color
   MPRegion *region = regions[0];
-  if ((draw_flags & MP_COLOR_BY_REGION) && (draw_flags & MP_COLOR_BY_INDEX) && region) LoadColor(region->house_index + 1);
-  else if ((draw_flags & MP_COLOR_BY_LEVEL) && (draw_flags & MP_COLOR_BY_INDEX) && region && region->level) LoadColor(region->level->house_index + 1);
-  else if ((draw_flags & MP_COLOR_BY_REGION) && (draw_flags & MP_COLOR_BY_LABEL) && region) LoadColor(region->label);
-  else if (draw_flags & MP_COLOR_FOR_PICK) LoadIndex(house_index, MP_PORTAL_TAG);
-  else if (draw_flags & MP_COLOR_BY_LABEL) LoadColor(label);
-  else if (draw_flags & MP_COLOR_BY_INDEX) LoadColor(house_index + 1);
+  if ((draw_flags & MP_COLOR_BY_PORTAL) && (draw_flags & MP_COLOR_BY_LABEL))
+    LoadColor(label);
+  else if ((draw_flags & MP_COLOR_BY_PORTAL) && (draw_flags & MP_COLOR_BY_INDEX))
+    LoadColor(house_index + 1);
+  else if ((draw_flags & MP_COLOR_BY_REGION) && (draw_flags & MP_COLOR_BY_INDEX) && region)
+    LoadColor(region->house_index + 1);
+  else if ((draw_flags & MP_COLOR_BY_REGION) && (draw_flags & MP_COLOR_BY_LABEL) && region)
+    LoadColor(region->label);
+  else if ((draw_flags & MP_COLOR_BY_LEVEL) && (draw_flags & MP_COLOR_BY_INDEX) && region && region->level)
+    LoadColor(region->level->house_index + 1);
+  else if (draw_flags & MP_COLOR_FOR_PICK)
+    LoadIndex(house_index, MP_PORTAL_TAG);
 
   // Draw this
   if (draw_flags[MP_SHOW_PORTALS] && draw_flags[MP_DRAW_DEPICTIONS]) DrawSpan(draw_flags);
@@ -1220,6 +1264,10 @@ DrawSpan(RNFlags draw_flags) const
   // Draw span
   glDisable(GL_LIGHTING);
   span.Draw();
+
+  // Draw spheres
+  R3Sphere(span.Start(), 0.1).Draw();  
+  R3Sphere(span.End(), 0.1).Draw();  
 }
 
 
@@ -1227,10 +1275,11 @@ DrawSpan(RNFlags draw_flags) const
 void MPPortal::
 DrawLabel(RNFlags draw_flags) const
 {
-  // Draw sphere at position
+  // Draw label above midpoint
   if (!label) return;
   glDisable(GL_LIGHTING);
-  DrawText(span.Midpoint() + 0.25 * R3posz_vector, label);
+  glColor3d(1, 1, 1);
+  DrawText(span.Midpoint() + 0.5 * R3posz_vector, label);
 }
 
 
@@ -1320,7 +1369,8 @@ DrawPosition(RNFlags draw_flags) const
 {
   // Draw a sphere at position
   if (draw_flags[MP_DRAW_DEPICTIONS]) {
-    glEnable(GL_LIGHTING);
+    if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+    else glEnable(GL_LIGHTING);
     R3Sphere(position, 0.2).Draw(R3_SURFACES_DRAW_FLAG);
   }
 }
@@ -1367,12 +1417,17 @@ MPHouse(const char *name, const char *label)
     regions(),
     portals(),
     levels(),
+    rgbd(),
     scene(NULL),
     mesh(NULL),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),    
     label((label) ? strdup(label) : NULL),
     name((name) ? strdup(name) : NULL)    
 {
+  // Set RGBD configuration parameters
+  rgbd.SetDatasetFormat("matterport");
+  rgbd.SetDepthDirectory("undistorted_depth_images");
+  rgbd.SetColorDirectory("undistorted_color_images");
 }
 
 
@@ -1411,6 +1466,9 @@ InsertImage(MPImage *image)
   image->house_index = images.NEntries();
   images.Insert(image);
 
+  // Insert rgbd image
+  rgbd.InsertImage(&(image->rgbd));
+
   // Update bounding box
   bbox.Union(image->position);
 }
@@ -1427,6 +1485,9 @@ RemoveImage(MPImage *image)
   images.RemoveTail();
   image->house = NULL;
   image->house_index = -1;
+
+  // Remove rgbd image
+  rgbd.RemoveImage(&(image->rgbd));
 }
 
 
@@ -1981,7 +2042,8 @@ DrawMesh(RNFlags draw_flags) const
       }
     }
     else if (draw_flags[MP_COLOR_BY_LABEL]) {
-      glEnable(GL_LIGHTING);
+      if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+      else glEnable(GL_LIGHTING);
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
@@ -1996,7 +2058,8 @@ DrawMesh(RNFlags draw_flags) const
       glEnd();
     }
     else if (draw_flags[MP_COLOR_BY_INDEX]) {
-      glEnable(GL_LIGHTING);
+      if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
+      else glEnable(GL_LIGHTING);
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
@@ -2098,7 +2161,7 @@ DrawScene(RNFlags draw_flags) const
   // Draw faces
   if (draw_flags[MP_DRAW_FACES]) {
     glEnable(GL_LIGHTING);
-    glColor3d(1.0, 1.0, 1.0);
+    glColor3d(1.0, 1.0, 1.0); 
     scene->Draw(R3_DEFAULT_DRAW_FLAGS);
   }
 
@@ -2349,8 +2412,9 @@ ReadAsciiFile(const char *filename)
   // Read images
   for (int i = 0; i < nimages; i++) {
     double intrinsics[9];
-    double extrinsics[16];;
+    double extrinsics[16];
     int camera_index, yaw_index, width, height;
+    char depth_filename[1024], color_filename[1024];
     fscanf(fp, "%s", cmd);
     fscanf(fp, "%d", &house_index);
     fscanf(fp, "%d", &panorama_index);
@@ -2363,10 +2427,18 @@ ReadAsciiFile(const char *filename)
     fscanf(fp, "%lf%lf%lf", &position[0], &position[1], &position[2]);
     for (int j = 0; j < 5; j++) fscanf(fp, "%d", &dummy);
     if (strcmp(cmd, "I")) { fprintf(stderr, "Error reading image %d\n", i); return 0; }
+    sprintf(depth_filename, "%s_d%d_%d.png", name_buffer, camera_index, yaw_index);
+    sprintf(color_filename, "%s_i%d_%d.jpg", name_buffer, camera_index, yaw_index);
     MPImage *image = new MPImage();
     image->name = (strcmp(name_buffer, "-")) ? strdup(name_buffer) : NULL;
     image->camera_index = camera_index;
     image->yaw_index = yaw_index;
+    image->rgbd.SetNPixels(width, height);
+    image->rgbd.SetExtrinsics(R4Matrix(extrinsics));
+    image->rgbd.SetIntrinsics(R3Matrix(intrinsics));
+    image->rgbd.SetDepthFilename(depth_filename);
+    image->rgbd.SetColorFilename(color_filename);
+    image->rgbd.SetName(name_buffer);
     image->extrinsics = R4Matrix(extrinsics);
     image->intrinsics = R3Matrix(intrinsics);
     image->width = width;
@@ -3088,6 +3160,17 @@ ReadConfigurationFile(const char *filename)
     img->height = height;
     img->position = image->WorldViewpoint();
     InsertImage(img);
+
+    // Fill in rgbd info
+    char depth_filename[1024], color_filename[1024];
+    sprintf(depth_filename, "%s_d%d_%d.png", img->name, img->camera_index, img->yaw_index);
+    sprintf(color_filename, "%s_i%d_%d.jpg", img->name, img->camera_index, img->yaw_index);
+    img->rgbd.SetNPixels(img->width, img->height);
+    img->rgbd.SetExtrinsics(R4Matrix(img->extrinsics));
+    img->rgbd.SetIntrinsics(R3Matrix(img->intrinsics));
+    img->rgbd.SetDepthFilename(depth_filename);
+    img->rgbd.SetColorFilename(color_filename);
+    img->rgbd.SetName(img->name);
 
     // Find panorama
     MPPanorama *panorama = NULL;

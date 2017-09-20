@@ -22,6 +22,10 @@ struct MPImage {
   // Drawing stuff
   void Draw(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
   void DrawCamera(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
+  void DrawBBox(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
+  void DrawImage(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
+  void DrawPoints(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
+  void DrawQuads(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
 
 public:
   struct MPHouse *house;
@@ -31,6 +35,7 @@ public:
   char *name;
   int camera_index;
   int yaw_index;
+  RGBDImage rgbd;
   R4Matrix extrinsics;
   R3Matrix intrinsics;
   int width, height;
@@ -393,6 +398,7 @@ public:
   RNArray<MPRegion *> regions;
   RNArray<MPPortal *> portals;
   RNArray<MPLevel *> levels;
+  RGBDConfiguration rgbd;
   R3Scene *scene;
   R3Mesh *mesh;
   R3Box bbox;
@@ -412,6 +418,7 @@ public:
 #define MP_DRAW_BBOXES           0x00000008
 #define MP_DRAW_DEPICTIONS       0x00000010
 #define MP_DRAW_LABELS           0x00000020
+#define MP_DRAW_IMAGES           0x00000040
 #define MP_DRAW_FLAGS            0x000000FF
 
 #define MP_SHOW_IMAGES           0x00000100
@@ -429,11 +436,11 @@ public:
 
 #define MP_COLOR_BY_IMAGE        0x00100000
 #define MP_COLOR_BY_PANORAMA     0x00200000
-#define MP_COLOR_BY_VERTEX       0x00400000
-#define MP_COLOR_BY_SURFACE      0x00800000
-#define MP_COLOR_BY_SEGMENT      0x01000000
-#define MP_COLOR_BY_OBJECT       0x02000000
-#define MP_COLOR_BY_REGION       0x04000000
+#define MP_COLOR_BY_SURFACE      0x00400000
+#define MP_COLOR_BY_SEGMENT      0x00800000
+#define MP_COLOR_BY_OBJECT       0x01000000
+#define MP_COLOR_BY_REGION       0x02000000
+#define MP_COLOR_BY_PORTAL       0x04000000
 #define MP_COLOR_BY_LEVEL        0x08000000
 #define MP_COLOR_BY_LABEL        0x10000000
 #define MP_COLOR_BY_INDEX        0x20000000

@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "R3Graphics/R3Graphics.h"
+#include "RGBD/RGBD.h"
 #include "fglut/fglut.h"
 #include "mp.h"
 
@@ -42,20 +43,23 @@ static int batch = 0;
 
 static MPHouse *house = NULL;
 static R3Viewer *viewer = NULL;
-static MPImage *selected_image = NULL;
 static MPRegion *selected_region = NULL;
-static R3SceneNode *selected_node = NULL;
+static MPObject *selected_object = NULL;
+static MPImage *selected_image = NULL;
+static MPImage *snap_image = NULL;
+static int snap_image_index = -1;
 
 
 // Draw flag variables
 
-static RNFlags image_draw_flags = MP_DRAW_DEPICTIONS;
-static RNFlags panorama_draw_flags = MP_DRAW_DEPICTIONS;
+static RNFlags level_draw_flags = MP_DRAW_DEPICTIONS;
 static RNFlags region_draw_flags = MP_DRAW_FACES | MP_DRAW_DEPICTIONS;
 static RNFlags object_draw_flags = MP_SHOW_OBJECTS | MP_SHOW_SEGMENTS | MP_DRAW_BBOXES;
-static RNFlags mesh_draw_flags = MP_SHOW_MESH | MP_DRAW_VERTICES;
+static RNFlags image_draw_flags = MP_DRAW_DEPICTIONS;
+static RNFlags panorama_draw_flags = MP_DRAW_DEPICTIONS;
+static RNFlags mesh_draw_flags = MP_DRAW_VERTICES;
 static RNFlags scene_draw_flags = MP_SHOW_SCENE | MP_DRAW_FACES;
-static RNFlags level_draw_flags = MP_DRAW_DEPICTIONS;
+static RNFlags color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
 
 
 // Display variables
@@ -63,7 +67,6 @@ static RNFlags level_draw_flags = MP_DRAW_DEPICTIONS;
 static int show_clip_box = 1;
 static int show_axes = 0;
 static int show_backfacing = 0;
-static int color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
 static R3Box clip_box = R3null_box;
 static R3Point center(0, 0, 0);
 
@@ -72,7 +75,7 @@ static R3Point center(0, 0, 0);
 
 static int GLUTwindow = 0;
 static int GLUTwindow_width = 640;
-static int GLUTwindow_height = 480;
+static int GLUTwindow_height = 512;
 static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmouse_drag = 0;
@@ -181,6 +184,7 @@ ReadHouse(char *filename)
     printf("  # Vertices = %d\n", house->vertices.NEntries());
     printf("  # Surfaces = %d\n", house->surfaces.NEntries());
     printf("  # Regions = %d\n", house->regions.NEntries());
+    printf("  # Portals = %d\n", house->portals.NEntries());
     printf("  # Levels = %d\n", house->levels.NEntries());
     fflush(stdout);
   }
@@ -397,6 +401,7 @@ WriteHouse(char *filename)
     printf("  # Vertices = %d\n", house->vertices.NEntries());
     printf("  # Surfaces = %d\n", house->surfaces.NEntries());
     printf("  # Regions = %d\n", house->regions.NEntries());
+    printf("  # Portals = %d\n", house->portals.NEntries());
     printf("  # Levels = %d\n", house->levels.NEntries());
     fflush(stdout);
   }
@@ -472,6 +477,44 @@ LoadClipPlanes(void)
 // Picking functions
 ////////////////////////////////////////////////////////////////////////
 
+static void
+SelectImage(MPImage *image)
+{
+  // Release old image
+  if (selected_image) {
+    selected_image->rgbd.ReleaseChannels();
+    selected_image = NULL;
+  }
+
+  // Read new image
+  if (image) {
+    image->rgbd.ReadChannels();
+    selected_image = image;
+  }
+}
+
+
+
+static void
+SnapImage(MPImage *image)
+{
+  // Select image
+  SelectImage(image);
+
+  // Set viewer stuff
+  if (image) {
+    viewer->RepositionCamera(image->rgbd.WorldViewpoint());
+    viewer->ReorientCamera(image->rgbd.WorldTowards(), image->rgbd.WorldUp());
+    center = image->rgbd.WorldViewpoint() + 3 * image->rgbd.WorldTowards();
+  }
+
+  // Remember snap image
+  if (image) snap_image_index = image->house_index;
+  snap_image = image;
+}
+
+
+
 static int
 Pick(int x, int y,
   MPPanorama **hit_panorama = NULL, MPImage **hit_image = NULL,
@@ -479,9 +522,6 @@ Pick(int x, int y,
   R3SceneNode **hit_node = NULL, R3SceneElement **hit_element = NULL, R3Shape **hit_shape = NULL, R3MeshFace **hit_face = NULL,
   R3Point *hit_position = NULL, R3Vector *hit_normal = NULL, RNScalar *hit_t = NULL)
 {
-  RNTime foo;
-  foo.Read();
-  
   // Initialize the result
   if (hit_panorama) *hit_panorama = NULL;
   if (hit_image) *hit_image = NULL;
@@ -506,6 +546,7 @@ Pick(int x, int y,
 
   // Set OpenGL stuff
   int pick_tolerance = 10;
+  glLineWidth(pick_tolerance);
   glPointSize(pick_tolerance);
   glDisable(GL_LIGHTING);
 
@@ -547,13 +588,14 @@ Pick(int x, int y,
   }
 
   // Draw image with color indicating index
-  if (image_draw_flags[MP_SHOW_IMAGES]) house->DrawImages(image_draw_flags | MP_COLOR_FOR_PICK);
+  if (image_draw_flags[MP_SHOW_IMAGES]) house->DrawImages(MP_SHOW_IMAGES | MP_DRAW_DEPICTIONS | MP_COLOR_FOR_PICK);
   if (panorama_draw_flags[MP_SHOW_PANORAMAS]) house->DrawPanoramas(panorama_draw_flags | MP_COLOR_FOR_PICK);
   if (object_draw_flags[MP_SHOW_OBJECTS]) house->DrawObjects(object_draw_flags | MP_COLOR_FOR_PICK);
   if (region_draw_flags[MP_SHOW_REGIONS]) house->DrawRegions(region_draw_flags | MP_COLOR_FOR_PICK);
   if (mesh_draw_flags[MP_SHOW_MESH]) house->DrawMesh(mesh_draw_flags | MP_COLOR_FOR_PICK);
     
   // Reset OpenGL stuff
+  glLineWidth(1);
   glPointSize(1);
   glFinish();
 
@@ -686,7 +728,23 @@ void GLUTRedraw(void)
   else glEnable(GL_CULL_FACE);
 
   // Set viewing transformation
-  viewer->Camera().Load();
+  if (snap_image) {
+    // Set viewport
+    glViewport(0, 0, snap_image->width/2, snap_image->height/2);
+    
+    // Set perspective transformation
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    snap_image->rgbd.ProjectionMatrix().Load();
+
+    // Set modelview transformation
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    snap_image->extrinsics.Load();
+  }
+  else {
+    viewer->Load();
+  }
 
   // Set lights
   static GLfloat light1_position[] = { 3.0, 4.0, 5.0, 0.0 };
@@ -702,8 +760,9 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 0.0);
     glLineWidth(3.0);
-    selected_image->Draw(MP_DRAW_EDGES);
+    selected_image->DrawCamera();
     glLineWidth(1.0);
+    selected_image->Draw(MP_SHOW_IMAGES | image_draw_flags | MP_COLOR_BY_RGB);
   }
 
   // Draw selected region
@@ -711,22 +770,22 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 0.0);
     glLineWidth(3.0);
-    selected_region->Draw(MP_DRAW_EDGES);
+    selected_region->DrawSurfaces(MP_SHOW_SURFACES | MP_DRAW_EDGES);
     glLineWidth(1.0);
   }
 
-  // Draw selected scene node
-  if (selected_node) {
+  // Draw selected object
+  if (selected_object) {
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 0.0);
     glLineWidth(3.0);
-    selected_node->Draw(R3_EDGES_DRAW_FLAG);
+    selected_object->DrawBBox(MP_DRAW_EDGES);
     glLineWidth(1.0);
   }
 
   // Draw house elements
   glColor3d(0.5, 0.5, 0.5);
-  if (image_draw_flags[MP_SHOW_IMAGES]) house->DrawImages(image_draw_flags | color_scheme);
+  if (image_draw_flags[MP_SHOW_IMAGES]) house->DrawImages(MP_SHOW_IMAGES | MP_DRAW_DEPICTIONS | color_scheme);
   if (panorama_draw_flags[MP_SHOW_PANORAMAS]) house->DrawPanoramas(panorama_draw_flags | color_scheme);
   if (region_draw_flags[MP_SHOW_REGIONS]) house->DrawRegions(region_draw_flags | color_scheme);
   if (level_draw_flags[MP_SHOW_LEVELS]) house->DrawLevels(level_draw_flags | color_scheme);
@@ -827,6 +886,7 @@ void GLUTMouse(int button, int state, int x, int y)
   if (state == GLUT_DOWN) {
     // Reset mouse state
     GLUTmouse_drag = 0;
+    snap_image = NULL;
   }
   else {
     // Process thumbwheel
@@ -843,19 +903,20 @@ void GLUTMouse(int button, int state, int x, int y)
 
       // Check for click (rather than drag)
       if (GLUTmouse_drag < 100) {
-        // Check for double click
-        if (double_click) {
-          // Print info about whatever was picked
-          MPPanorama *panorama = NULL;
-          MPImage *image = NULL;
-          MPSegment *segment = NULL;
-          MPObject *object = NULL;
-          MPRegion *region = NULL;
-          R3SceneNode *node = NULL;
-          R3MeshFace *face = NULL;
-          R3Point position;
-          R3Vector normal;
-          if (Pick(x, y, &panorama, &image, &segment, &object, &region, &node, NULL, NULL, &face, &position, &normal)) {
+        // Find whatever was below cursor
+        MPPanorama *panorama = NULL;
+        MPImage *image = NULL;
+        MPSegment *segment = NULL;
+        MPObject *object = NULL;
+        MPRegion *region = NULL;
+        R3SceneNode *node = NULL;
+        R3MeshFace *face = NULL;
+        R3Point position;
+        R3Vector normal;
+        if (Pick(x, y, &panorama, &image, &segment, &object, &region, &node, NULL, NULL, &face, &position, &normal)) {
+          // Check for double click
+          if (double_click) {
+            // Print info about whatever was picked
             if (panorama) printf("Panorama %d at ", panorama->house_index);
             else if (image) printf("Image %d at ", image->house_index);
             else if (segment) printf("Segment %d at ", segment->house_index);
@@ -867,12 +928,14 @@ void GLUTMouse(int button, int state, int x, int y)
             printf("\n");
           }
         }
+
+        // Set selection
+        selected_region = region;
+        selected_object = object;
+        SelectImage(image);
         
         // Set viewing center point
-        R3Point position;
-        if (Pick(x, y, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &position)) {
-          center = position;
-        }
+        center = position;
       }
     }
   }
@@ -901,6 +964,20 @@ void GLUTSpecial(int key, int x, int y)
 
   // Process keyboard button event
   switch (key) {
+  case GLUT_KEY_PAGE_UP:
+    if (house->images.NEntries() > 0) {
+      if (++snap_image_index >= house->images.NEntries()) snap_image_index = house->images.NEntries()-1;
+      SnapImage(house->images.Kth(snap_image_index));
+    }
+    break;
+    
+  case GLUT_KEY_PAGE_DOWN:
+    if (house->images.NEntries() > 0) {
+      if (--snap_image_index < 0) snap_image_index = 0;
+      SnapImage(house->images.Kth(snap_image_index));
+    }
+    break;
+    
   case GLUT_KEY_LEFT:
     clip_box[0][2] -= 0.1;
     if (clip_box[0][2] > clip_box[1][2]) clip_box[0][2] = clip_box[1][2];
@@ -948,59 +1025,46 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case 'B': 
-    region_draw_flags.XOR(MP_DRAW_BBOXES);
-    break;
-    
   case 'b':
+    region_draw_flags.XOR(MP_DRAW_BBOXES);
     object_draw_flags.XOR(MP_DRAW_BBOXES);
+    image_draw_flags.XOR(MP_DRAW_BBOXES);
     break;
 
   case 'C': 
   case 'c':
-    if (color_scheme == MP_COLOR_BY_RGB)
-      color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
-    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL))
-      color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX))
-      color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL;
-    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL))
-      color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX))
-      color_scheme = MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX))
-      color_scheme = MP_COLOR_BY_RGB;
-    break;
-
-  case 'E': 
-    region_draw_flags.XOR(MP_DRAW_EDGES);
+    image_draw_flags.XOR(MP_SHOW_IMAGES);
     break;
     
-  case 'e':
+  case 'E': 
+  case 'e': 
+    region_draw_flags.XOR(MP_DRAW_EDGES);
     object_draw_flags.XOR(MP_DRAW_EDGES);
     scene_draw_flags.XOR(MP_DRAW_EDGES);
     mesh_draw_flags.XOR(MP_DRAW_EDGES);
     break;
 
   case 'F': 
+  case 'f': 
     region_draw_flags.XOR(MP_DRAW_FACES);
-    break;
-    
-  case 'f':
     object_draw_flags.XOR(MP_DRAW_FACES);
     scene_draw_flags.XOR(MP_DRAW_FACES);
     mesh_draw_flags.XOR(MP_DRAW_FACES);
     break;
 
+  case 'H':
+  case 'h':
+    PrintCommands();
+    break; 
+
   case 'I': 
-  case 'i': 
-    image_draw_flags.XOR(MP_SHOW_IMAGES);
+  case 'i':
+    image_draw_flags.XOR(MP_DRAW_IMAGES);
     break;
 
   case 'L': 
-    region_draw_flags.XOR(MP_DRAW_LABELS);
-    break;
-    
   case 'l':
+    region_draw_flags.XOR(MP_DRAW_LABELS);
     object_draw_flags.XOR(MP_DRAW_LABELS);
     break;
 
@@ -1030,10 +1094,9 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case 'V': 
-    region_draw_flags.XOR(MP_DRAW_VERTICES);
-    break;
-    
   case 'v':
+    region_draw_flags.XOR(MP_DRAW_VERTICES);
+    image_draw_flags.XOR(MP_DRAW_VERTICES);
     object_draw_flags.XOR(MP_DRAW_VERTICES);
     mesh_draw_flags.XOR(MP_DRAW_VERTICES);
     break;
@@ -1043,21 +1106,33 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_clip_box = !show_clip_box;
     break;
 
+  case ' ':
+    if (color_scheme == MP_COLOR_BY_RGB)
+      color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
+    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL))
+      color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX;
+    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX))
+      color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL;
+    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL))
+      color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX;
+    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX))
+      color_scheme = MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX;
+    else if (color_scheme == (MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX))
+      color_scheme = MP_COLOR_BY_RGB;
+    break;
+
   case 27: // ESC
     // Reset the selections and clipbox
     clip_box = house->bbox;
-    selected_image = NULL;
     selected_region = NULL;
-    selected_node = NULL;
+    selected_object = NULL;
+    selected_image = NULL;
+    snap_image = NULL;
     break;
 
   case 17: // ctrl-Q
     GLUTStop();
     break;
-
-  case ' ':  // Space
-    PrintCommands();
-    break; 
   }
   
   // Remember mouse position 
@@ -1135,7 +1210,7 @@ void GLUTMainLoop(void)
   RNLength r = house->bbox.DiagonalRadius();
   assert((r > 0.0) && RNIsFinite(r));
   if (!initial_camera) initial_camera_origin = house->bbox.Centroid() - initial_camera_towards * (2.5 * r);
-  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.01 * r, 100.0 * r);
+  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r);
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   viewer = new R3Viewer(camera, viewport);
   
