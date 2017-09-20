@@ -180,15 +180,19 @@ A list of manually specified floor and region boundaries along with semantic reg
 
 Each .house file has a sequence of ascii lines with fields separated by spaces in the following format:
 
-    H name label #images #panoramas #vertices #surfaces #regions #levels  0 0 0 0 0 0 0 0
+    H name label #images #panoramas #vertices #surfaces #segments #objects #categories #regions #portals #levels  0 0 0 0 0  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
     L level_index #regions label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
-    R region_index level_index #panoramas #surfaces label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
-    S surface_index region_index #vertices #surfaces label  px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi 0 0 0 0 0
+    R region_index level_index 0 0 label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+    P portal_index region0_index region1_index label  xlo ylo zlo xhi yhi zhi  0 0 0 0
+    S surface_index region_index 0 label px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
     V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
-    P name panorama_index region_index #images  px py pz  0 0 0 0 0
-    I name panorama_index panorama_index  px py pz  0 0 0 0 0
+    P name  panorama_index region_index 0  px py pz  0 0 0 0 0
+    I image_index panorama_index  name camera_index yaw_index e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33  i00 i01 i02  i10 i11 i12 i20 i21 i22  width height  px py pz  0 0 0 0 0
+    C category_index label_id label_name mpcat40_id mpcat40_name 0 0 0 0 0
+    O object_index region_index category_index px py pz  a0x a0y a0z  a1x a1y a1z  r0 r1 r2 0 0 0 0 0 0 0 0 
+    E segment_index object_index id area px py pz xlo ylo zlo xhi yhi zhi  0 0 0 0 0
    
-where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, and 0 is a value that can be ignored.   The extent of each region is defined by a prism with its vertical extent dictated by zlo and zhi as its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with the first surface assocated with the region.  
+where xxx_index indicates the index of the xxx in the house file (starting at 0), #xxxs indicates how many xxxs will appear later in the file that back reference (associate) to this entry, (px,py,pz) is a representative position, (nx,ny,nz) is a normal direction, and (xlo, ylo, zlo, xhi, yhi, zhi) is an axis-aligned bounding box, camera_index is in [0-5], yaw_index is in [0-2], (e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33) are the extrinsic matrix of a camera, (i00 i01 i02  i10 i11 i12 i20 i21 i22) are the intrinsic matrix for a camera, (px, py, pz, a0x, a0y, a0z, a1x, a1y, a1z, r0, r1, r2) define the center, axis directions, and radii of an oriented bounding box, and 0 is a value that can be ignored.   The extent of each region is defined by a prism with its vertical extent dictated by its heigh and its horizontal cross-section dictated by the counter-clockwise set of polygon vertices associated with each surface assocated with the region.  
 
 The label of each region is a string with the following conventions:
 
