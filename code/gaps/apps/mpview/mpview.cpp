@@ -141,7 +141,6 @@ PrintCommands(void)
   printf("    Down-arrow = move top of clipbox down\n");
   printf("    Right-arrow = move bottom of clipbox up\n");
   printf("    Left-arrow = move bottom of clipbox down\n");
-  printf("    Left-mouse double-click = set the bottom of the clipbox \n");
   printf("    ESC = reset the clipbox (and remove all selections)\n");
   printf("\n");
   printf("Display options:\n");
@@ -982,6 +981,13 @@ void GLUTSpecial(int key, int x, int y)
 
   // Process keyboard button event
   switch (key) {
+  case GLUT_KEY_F1: {
+    MPImage *image = NULL;
+    if (Pick(x, y, NULL, &image)) {
+      SnapImage(image);
+    }
+    break; }
+    
   case GLUT_KEY_PAGE_UP:
     if (house->images.NEntries() > 0) {
       if (++snap_image_index >= house->images.NEntries()) snap_image_index = house->images.NEntries()-1;

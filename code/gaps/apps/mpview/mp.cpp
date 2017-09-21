@@ -2116,6 +2116,7 @@ DrawMesh(RNFlags draw_flags) const
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
+        if (!face) continue;
         int category = mesh->FaceCategory(face);
         LoadColor(category);
         R3LoadPoint(mesh->VertexPosition(vertex));
@@ -2128,6 +2129,7 @@ DrawMesh(RNFlags draw_flags) const
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
+        if (!face) continue;
         int segment = mesh->FaceSegment(face);
         LoadColor(segment);
         R3LoadPoint(mesh->VertexPosition(vertex));
