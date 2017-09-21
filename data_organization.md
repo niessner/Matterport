@@ -1,10 +1,7 @@
 Data organization
 =========================
 
-The main dataset resides in the "data" directory.  There is 
-a separate subdirectory for every house, which is named by a unique string (e.g., "1pXnuDYAj8r").   
-Within each house directory, there are separate directories for different types 
-of data as follows:
+The main dataset resides in the "data" directory.  There is a separate subdirectory for every house, which is named by a unique string (e.g., "1pXnuDYAj8r").  Within each house directory, there are separate directories for different types of data as follows:
 
 Data provided directly by Matterport:
 - matterport_camera_intrinsics = camera intrinsics provided by matterport
