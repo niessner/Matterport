@@ -2976,7 +2976,7 @@ ReadObjectFile(const char *filename)
 
   // Create maps to find categories
   RNMap<int, MPCategory *> id_to_category;
-  RNMap<const char *, MPCategory *> name_to_category;
+  RNMap<std::string, MPCategory *> name_to_category;
   for (int i = 0; i < categories.NEntries(); i++) {
     MPCategory *category = categories.Kth(i);
     id_to_category.Insert(category->label_id, category);
@@ -3015,7 +3015,7 @@ ReadObjectFile(const char *filename)
     // Associate object with category
     if (json_group.isMember("label")) {
       Json::Value json_label = json_group["label"];
-      const char *label_name = json_label.asString().c_str();
+      std::string label_name = json_label.asString();
       MPCategory *category = NULL;
       if (name_to_category.Find(label_name, &category)) {
         category->InsertObject(object);
@@ -3096,8 +3096,9 @@ ReadObjectFile(const char *filename)
     InsertObject(object);
   }
 
-  // Update mesh
+  // Update stuff
   if (mesh) {
+    // Update mesh
     for (int i = 0; i < objects.NEntries(); i++) {
       MPObject *object = objects.Kth(i);
       MPCategory *category = object->category;
@@ -3111,6 +3112,25 @@ ReadObjectFile(const char *filename)
           mesh->SetFaceSegment(face, object_index);
           mesh->SetFaceCategory(face, category_index);
         }
+      }
+    }
+
+    // Compute object oriented bounding boxes
+    for (int i = 0; i < objects.NEntries(); i++) {
+      MPObject *object = objects.Kth(i);
+      if (object->obb.MaxRadius() <= 0) {
+        RNArray<R3Point *> points;
+        for (int j = 0; j < object->segments.NEntries(); j++) {
+          MPSegment *segment = object->segments.Kth(j);
+          for (int k = 0; k < segment->faces.NEntries(); k++) {
+            R3MeshFace *face = segment->faces.Kth(k);
+            for (int m = 0; m < 3; m++) {
+              R3MeshVertex *vertex = mesh->VertexOnFace(face, m);
+              points.Insert((R3Point *) &(mesh->VertexPosition(vertex)));
+            }
+          }
+        }
+        object->obb = R3OrientedBox(points);
       }
     }
   }

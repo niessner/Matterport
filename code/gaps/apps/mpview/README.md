@@ -7,7 +7,7 @@ mpview is a C++ application for parsing and viewing houses in the Matterport3D d
 The mpview application can be invoked by simplying typing "mpview -input_house house_segmentations/xxx.house -v".   However, it also supports control over how input files are parsed and how data is displayed on startup as follows:   
 
     Usage: mpview [options]
-      -input_house <filename> : input house segmentations file (e.g., xxx/house_segmentations/xxx.house)
+      -input_house <filename> : input region segmentations file (e.g., xxx/region_segmentations/xxx.house)
       -input_scene <filename> : input textured mesh (e.g., xxx/matterport_mesh/*/*.obj)
       -input_mesh <filename> : input poisson mesh (e.g., xxx/poisson_meshes/xxx_11.ply)
       -input_categories <filename> : input categories tsv file (e.g., metadata/*.tsv)
@@ -27,6 +27,11 @@ The mpview application can be invoked by simplying typing "mpview -input_house h
       mpview -input_house house_segmentations/*.house -input_scene matterport_mesh/*/*.obj -v   OR
       mpview -input_house house_segmentations/*.house -input_mesh house_segmentations/*.ply -v
     
+    Typical usage for viewing region segmentations:
+      cd scans/17DRP5sb8fy (or any other house)
+      mpview region_segmentations/region0.ply region_segmentations/region0.fsegs.json region_segmentations/region0.semseg.json ../../metadata/category_mapping.tsv -v
+
+
 ## Command interface
 
 Upon invoking the program, a window will popup (unless the -batch command is given on the command line).   By default, mpview will show oriented bounding boxes for objects colored by their semantic labels.  You may interactively change the view by dragging the mouse, change what is shown by keyboard strokes, change the coloring scheme by hitting the space bar, etc.   Here is an overview of the available commands:
