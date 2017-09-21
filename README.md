@@ -39,3 +39,7 @@ Using the Matterport3D data, we present several benchmark tasks: image keypoint 
 
 We provide code for loading and viewing the data.  See the [code](code) directory for details.
 
+## License
+
+The data is released under the [Matterport3D Terms of Use](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf), and the code is released under the MIT license.
+
