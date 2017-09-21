@@ -29,7 +29,7 @@ The mpview application can be invoked by simplying typing "mpview -input_house h
     
     Typical usage for viewing region segmentations:
       cd scans/17DRP5sb8fy (or any other house)
-      mpview region_segmentations/region0.ply region_segmentations/region0.fsegs.json region_segmentations/region0.semseg.json ../../metadata/category_mapping.tsv -v
+      mpview -input_mesh region_segmentations/region0.ply -input_segments region_segmentations/region0.fsegs.json -input_objects region_segmentations/region0.semseg.json -input_categories ../../metadata/category_mapping.tsv -v
 
 
 ## Command interface
