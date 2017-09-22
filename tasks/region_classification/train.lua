@@ -48,7 +48,7 @@ criterion = criterion:cuda()
 -- Get model parameters
 local params,gradParams = model:getParameters()
 
-for trainIter = 1,10000000 do
+for trainIter = 1,200000 do
 
 	-- Create a mini-batch of training examples
 	local input,label = dataLoader:getMiniBatch()
