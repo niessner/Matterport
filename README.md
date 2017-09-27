@@ -16,7 +16,7 @@ If you use the Matterport3D data or code please cite:
 
 ```
 @article{Matterport3D,
-  title={Matterport3D: Learning from RGB-D Data in Indoor Environments},
+  title={{Matterport3D}: Learning from {RGB-D} Data in Indoor Environments},
   author={Chang, Angel and Dai, Angela and Funkhouser, Thomas and Halber, Maciej and Niessner, Matthias and Savva, Manolis and Song, Shuran and Zeng, Andy and Zhang, Yinda},
   journal={International Conference on 3D Vision (3DV)},
   year={2017}
