@@ -2105,6 +2105,7 @@ DrawMesh(RNFlags draw_flags) const
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
+        if (!face) continue;
         LoadIndex(mesh->FaceID(face), MP_MESH_TAG);
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
