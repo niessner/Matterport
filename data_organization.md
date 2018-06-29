@@ -180,7 +180,7 @@ The data for each house xxx is represented in four files:
 
         H name label #images #panoramas #vertices #surfaces #segments #objects #categories #regions #portals #levels  0 0 0 0 0  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
         L level_index #regions label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
-        R region_index level_index 0 0 label  px py pz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
+        R region_index level_index 0 0 label  px py pz  xlo ylo zlo xhi yhi zhi  height  0 0 0 0
         P portal_index region0_index region1_index label  xlo ylo zlo xhi yhi zhi  0 0 0 0
         S surface_index region_index 0 label px py pz  nx ny nz  xlo ylo zlo xhi yhi zhi  0 0 0 0 0
         V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
@@ -197,7 +197,8 @@ The data for each house xxx is represented in four files:
         camera_index is in [0-5], yaw_index is in [0-2],
         (e00 e01 e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33) are the extrinsic matrix of a camera,
         (i00 i01 i02  i10 i11 i12 i20 i21 i22) are the intrinsic matrix for a camera,
-        (px, py, pz, a0x, a0y, a0z, a1x, a1y, a1z, r0, r1, r2) define the center, axis directions, and radii of an oriented bounding box, and
+        (px, py, pz, a0x, a0y, a0z, a1x, a1y, a1z, r0, r1, r2) define the center, axis directions, and radii of an oriented bounding box, 
+        height is the distance from the floor, and 
         0 is a value that can be ignored.
 
         The extent of each region is defined by a prism with its vertical extent dictated by its height and
