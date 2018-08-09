@@ -42,7 +42,9 @@ where <panorama_uuid> is a unique string, <camera_index> is [0-5], and <yaw_inde
 matterport_hdr_images
 ---------------------
 
-Raw HDR images in jxr format.
+Raw HDR images in jxr format.   Each RGB channel provides a 16-bit value (jxr_val) that can be mapped to intensity with:
+    if (jxr_val <= 3000) intensity = jxr_val * 8e-8
+    else intensity = 0.00024 * 1.0002 ** (jxr_val - 3000)
 
 
 matterport_color_images
