@@ -44,12 +44,18 @@ matterport_hdr_images
 
 Raw HDR images in jxr format.   
 
-Each RGB channel provides a 16-bit value (jxr_val) that can be mapped to intensity with:
+Each RGB channel provides a 16-bit value (jxr_val[i]) that can be mapped to intensity (col_val[i]) with:
 
-    if (jxr_val <= 3000) intensity = jxr_val * 8e-8
-    else intensity = 0.00024 * 1.0002 ** (jxr_val - 3000)
-
-
+    for (int i = 0; i < 3; i++) {
+      if (jxr_val[i] <= 3000) col_val[i] = jxr_val[i] * 8e-8
+      else col_val[i] = 0.00024 * 1.0002 ** (jxr_val[i] - 3000)
+    }
+    
+    col_val[0] *= 0.8
+    col_val[1] *= 1.0
+    col_val[2] *= 1.6
+    
+    
 matterport_color_images
 ---------------------
 
