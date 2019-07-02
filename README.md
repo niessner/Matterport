@@ -27,7 +27,7 @@ If you use the Matterport3D data or code please cite:
 
 The dataset consists of several types of annotations: color and depth images, camera poses, textured 3D meshes, building floor plans and region annotations, object instance semantic annotations.  For details see the [data organization](data_organization.md) document.
 
-To download the dataset, you must indicate that you agree to the terms of use by signing the [Terms of Use](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf) agreement form and sending it to: [matterport3d@googlegroups.com](mailto:matterport3d@googlegroups.com).  We will then provide download access to the dataset.
+To download the dataset, you must indicate that you agree to the terms of use by signing the [Terms of Use](http://kaldir.vc.in.tum.de/matterport/MP_TOS.pdf) agreement form and sending it to: [matterport3d@googlegroups.com](mailto:matterport3d@googlegroups.com).  We will then provide download access to the dataset.
 
 
 ## Benchmark tasks
@@ -41,5 +41,5 @@ We provide code for loading and viewing the data.  See the [code](code) director
 
 ## License
 
-The data is released under the [Matterport3D Terms of Use](http://dovahkiin.stanford.edu/matterport/public/MP_TOS.pdf), and the code is released under the MIT license.
+The data is released under the [Matterport3D Terms of Use](http://kaldir.vc.in.tum.de/matterport/MP_TOS.pdf), and the code is released under the MIT license.
 
