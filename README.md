@@ -25,8 +25,6 @@ If you use the Matterport3D data or code please cite:
 
 ## Data
 
-### Please note that our data server is currently down for maintenance (Nov. 24 - 25).
-
 The dataset consists of several types of annotations: color and depth images, camera poses, textured 3D meshes, building floor plans and region annotations, object instance semantic annotations.  For details see the [data organization](data_organization.md) document.
 
 To download the dataset, you must indicate that you agree to the terms of use by signing the [Terms of Use](http://kaldir.vc.in.tum.de/matterport/MP_TOS.pdf) agreement form and sending it to: [matterport3d@googlegroups.com](mailto:matterport3d@googlegroups.com).  We will then provide download access to the dataset.
